@@ -8,10 +8,11 @@ from dotenv import load_dotenv
 
 load_dotenv()  # must run before the Gemini service reads GEMINI_API_KEY
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.schemas import AnalysisResponse, AnalyzeRequest
+from app.schemas import AnalysisResponse, AnalyzeRequest, ExtractResponse
+from app.services.extract_service import extract_text
 from app.services.gemini_service import run_analysis
 
 app = FastAPI(
@@ -35,6 +36,18 @@ app.add_middleware(
 @app.get("/api/health")
 async def health() -> dict:
     return {"status": "ok", "engine": "ALIGN"}
+
+
+@app.post("/api/extract", response_model=ExtractResponse)
+async def extract(file: UploadFile = File(...)) -> ExtractResponse:
+    """Extract plain text from an uploaded resume file (PDF, DOCX, or TXT)."""
+    data = await file.read()
+    filename = file.filename or "upload"
+    try:
+        text = extract_text(filename, data)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return ExtractResponse(filename=filename, text=text)
 
 
 @app.post("/api/analyze", response_model=AnalysisResponse)

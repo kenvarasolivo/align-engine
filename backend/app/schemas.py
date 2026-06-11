@@ -22,6 +22,13 @@ class AnalyzeRequest(BaseModel):
     language: Language = Field(..., description="Strict output locale: 'en' or 'de'.")
 
 
+class ExtractResponse(BaseModel):
+    """Result of POST /api/extract — plain text pulled from an uploaded resume file."""
+
+    filename: str = Field(..., description="Original name of the uploaded file.")
+    text: str = Field(..., description="Extracted plain text content.")
+
+
 class AnalysisResponse(BaseModel):
     """Structured Output contract enforced on the Gemini response."""
 
