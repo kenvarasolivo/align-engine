@@ -5,7 +5,7 @@ into the Gemini generation config, so its field names and descriptions are
 part of the prompt surface — keep them precise.
 """
 
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,6 +20,8 @@ class AnalyzeRequest(BaseModel):
     job_description_text: str = Field(..., min_length=1, description="Raw pasted job description text.")
     mode: Mode = Field(..., description="Workflow mode: 'anschreiben' (one-page cover letter) or 'email' (cold outreach).")
     language: Language = Field(..., description="Strict output locale: 'en' or 'de'.")
+    resume_id: Optional[str] = Field(None, description="Vault resume id, when the resume came from the user's vault.")
+    job_description_id: Optional[str] = Field(None, description="Saved job description id, when loaded from bookmarks.")
 
 
 class ExtractResponse(BaseModel):
@@ -55,3 +57,24 @@ class AnalysisResponse(BaseModel):
             "rules, written entirely in the requested output language."
         ),
     )
+
+
+class UsageInfo(BaseModel):
+    """Per-user quota snapshot returned alongside an analysis."""
+
+    used_today: int = Field(..., description="Runs consumed today (UTC), including this one.")
+    daily_limit: int = Field(..., description="Maximum runs allowed per day.")
+
+
+class AnalyzeResult(AnalysisResponse):
+    """API response for POST /api/analyze.
+
+    Extends the Gemini contract with persistence/usage metadata. Kept separate
+    from `AnalysisResponse` so the extra fields never leak into the Structured
+    Output schema sent to Gemini.
+    """
+
+    analysis_id: Optional[str] = Field(None, description="History row id, when the user is signed in.")
+    usage: Optional[UsageInfo] = Field(None, description="Quota snapshot, when the user is signed in.")
+    prompt_tokens: Optional[int] = Field(None, description="Gemini prompt token count for this run.")
+    output_tokens: Optional[int] = Field(None, description="Gemini output token count for this run.")

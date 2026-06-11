@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type { DragEvent } from "react";
-import type { Language } from "../App";
+import type { Language } from "../types";
 
 interface InputPanelProps {
   language: Language;
@@ -11,9 +11,17 @@ interface InputPanelProps {
   onAnalyze: () => void;
   isLoading: boolean;
   error: string | null;
+  /** True when the user is signed in and can persist to Supabase. */
+  canSave: boolean;
+  onSaveResume: () => Promise<boolean>;
+  onSaveJob: () => Promise<boolean>;
+  /** Called after a file upload replaces the resume text. */
+  onResumeFileUploaded: () => void;
 }
 
 const ACCEPTED_FILE_TYPES = ".pdf,.docx,.txt";
+
+type SaveState = "idle" | "saving" | "saved" | "failed";
 
 const STRINGS: Record<
   Language,
@@ -28,6 +36,10 @@ const STRINGS: Record<
     extracting: string;
     dropHint: string;
     uploadFailed: string;
+    save: string;
+    saving: string;
+    saved: string;
+    saveFailed: string;
   }
 > = {
   en: {
@@ -41,6 +53,10 @@ const STRINGS: Record<
     extracting: "Extracting…",
     dropHint: "Drop your resume file",
     uploadFailed: "Could not read the file.",
+    save: "Save",
+    saving: "Saving…",
+    saved: "Saved ✓",
+    saveFailed: "Save failed",
   },
   de: {
     resumeLabel: "Lebenslauf",
@@ -53,8 +69,63 @@ const STRINGS: Record<
     extracting: "Wird extrahiert…",
     dropHint: "Lebenslauf-Datei hier ablegen",
     uploadFailed: "Die Datei konnte nicht gelesen werden.",
+    save: "Speichern",
+    saving: "Speichert…",
+    saved: "Gespeichert ✓",
+    saveFailed: "Fehlgeschlagen",
   },
 };
+
+function SaveButton({
+  state,
+  disabled,
+  onClick,
+  strings,
+}: {
+  state: SaveState;
+  disabled: boolean;
+  onClick: () => void;
+  strings: (typeof STRINGS)["en"];
+}) {
+  const label =
+    state === "saving"
+      ? strings.saving
+      : state === "saved"
+        ? strings.saved
+        : state === "failed"
+          ? strings.saveFailed
+          : strings.save;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled || state === "saving"}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border-[1px] border-hairline bg-white transition-all duration-200 disabled:opacity-40 ${
+        state === "saved"
+          ? "text-emerald-600 border-emerald-200"
+          : state === "failed"
+            ? "text-red-600 border-red-200"
+            : "text-charcoal/70 hover:text-cobalt hover:border-cobalt/40"
+      }`}
+    >
+      <svg
+        className="h-3.5 w-3.5"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+        <path d="M17 21v-8H7v8M7 3v5h8" />
+      </svg>
+      <span>{label}</span>
+    </button>
+  );
+}
 
 export default function InputPanel({
   language,
@@ -65,6 +136,10 @@ export default function InputPanel({
   onAnalyze,
   isLoading,
   error,
+  canSave,
+  onSaveResume,
+  onSaveJob,
+  onResumeFileUploaded,
 }: InputPanelProps) {
   const t = STRINGS[language];
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -74,7 +149,20 @@ export default function InputPanel({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isDragActive, setIsDragActive] = useState(false);
 
+  const [resumeSaveState, setResumeSaveState] = useState<SaveState>("idle");
+  const [jobSaveState, setJobSaveState] = useState<SaveState>("idle");
+
   const canSubmit = !isLoading && resumeText.trim().length > 0 && jobDescriptionText.trim().length > 0;
+
+  const runSave = async (
+    save: () => Promise<boolean>,
+    setState: (state: SaveState) => void
+  ) => {
+    setState("saving");
+    const ok = await save();
+    setState(ok ? "saved" : "failed");
+    setTimeout(() => setState("idle"), 2500);
+  };
 
   const uploadResumeFile = async (file: File) => {
     if (isExtracting) return;
@@ -93,6 +181,7 @@ export default function InputPanel({
 
       const data: { filename: string; text: string } = await response.json();
       onResumeChange(data.text);
+      onResumeFileUploaded();
       setUploadedFileName(data.filename);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : t.uploadFailed);
@@ -135,6 +224,14 @@ export default function InputPanel({
             )}
             {!uploadError && uploadedFileName && !isExtracting && (
               <span className="text-xs text-charcoal/50 truncate max-w-[180px]">{uploadedFileName}</span>
+            )}
+            {canSave && (
+              <SaveButton
+                state={resumeSaveState}
+                disabled={resumeText.trim().length === 0}
+                onClick={() => void runSave(onSaveResume, setResumeSaveState)}
+                strings={t}
+              />
             )}
             <button
               type="button"
@@ -207,10 +304,18 @@ export default function InputPanel({
 
       {/* Bottom half — Job Description */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="px-6 pt-4 pb-1">
+        <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-1">
           <span className="text-[11px] font-semibold uppercase tracking-widest text-charcoal/50 select-none">
             {t.jobLabel}
           </span>
+          {canSave && (
+            <SaveButton
+              state={jobSaveState}
+              disabled={jobDescriptionText.trim().length === 0}
+              onClick={() => void runSave(onSaveJob, setJobSaveState)}
+              strings={t}
+            />
+          )}
         </div>
         <textarea
           value={jobDescriptionText}

@@ -7,6 +7,7 @@ backend/.env
 # Node
 node_modules/
 frontend/dist/
+frontend/.env
 
 # Editor / OS
 .vscode/

@@ -94,8 +94,12 @@ def _build_prompt(payload: AnalyzeRequest) -> str:
     )
 
 
-async def run_analysis(payload: AnalyzeRequest) -> AnalysisResponse:
-    """Run the alignment analysis and draft generation via Gemini Structured Outputs."""
+async def run_analysis(payload: AnalyzeRequest) -> tuple[AnalysisResponse, int | None, int | None]:
+    """Run the alignment analysis via Gemini Structured Outputs.
+
+    Returns the parsed result plus prompt/output token counts (None when the
+    SDK does not report usage metadata) for usage tracking and cost estimates.
+    """
     client = _get_client()
 
     response = await client.aio.models.generate_content(
@@ -109,8 +113,12 @@ async def run_analysis(payload: AnalyzeRequest) -> AnalysisResponse:
         ),
     )
 
+    usage = response.usage_metadata
+    prompt_tokens = usage.prompt_token_count if usage else None
+    output_tokens = usage.candidates_token_count if usage else None
+
     # The SDK parses Structured Output into the Pydantic model for us; fall back
     # to validating the raw JSON text if `parsed` is unavailable.
     if isinstance(response.parsed, AnalysisResponse):
-        return response.parsed
-    return AnalysisResponse.model_validate_json(response.text)
+        return response.parsed, prompt_tokens, output_tokens
+    return AnalysisResponse.model_validate_json(response.text), prompt_tokens, output_tokens

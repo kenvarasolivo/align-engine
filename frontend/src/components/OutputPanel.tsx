@@ -1,4 +1,4 @@
-import type { AnalysisResult, Language, OutputTab } from "../App";
+import type { AnalysisResult, Language, OutputTab } from "../types";
 
 interface OutputPanelProps {
   language: Language;
