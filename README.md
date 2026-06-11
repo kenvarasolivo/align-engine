@@ -69,6 +69,20 @@ Open http://localhost:5173 — the Vite dev server proxies `/api/*` to the backe
 
 > **Vercel:** set the `VITE_SUPABASE_*` vars (frontend) and `GEMINI_API_KEY` + `SUPABASE_*` vars (backend) in the project's environment settings.
 
+### Running locally
+
+Once both `.env` files are in place and dependencies are installed, start the two dev servers in separate terminals:
+
+```powershell
+# Terminal 1 — backend
+cd backend; .\.venv\Scripts\Activate.ps1; uvicorn main:app --reload --port 8000
+
+# Terminal 2 — frontend
+cd frontend; npm run dev
+```
+
+Then open http://localhost:5173 (Vite proxies `/api/*` to the backend on port 8000).
+
 ## Usage
 
 1. Sign in (or **Continue as guest** — fully functional, nothing saved).

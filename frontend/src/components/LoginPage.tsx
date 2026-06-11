@@ -44,7 +44,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="text-center mb-8 select-none">
-          <h1 className="text-3xl font-extrabold tracking-tight text-obsidian">ALIGN</h1>
+          <h1 className="text-5xl font-extrabold tracking-tight text-obsidian">ALIGN</h1>
           <p className="mt-2 text-sm text-charcoal/60">
             Sign in to keep your analyses, resumes and saved jobs.
           </p>
@@ -138,6 +138,35 @@ export default function LoginPage() {
             Guest sessions work fully, but nothing is saved.
           </p>
         </div>
+
+        {/* Impressum */}
+        <details className="mt-8 text-left">
+          <summary className="cursor-pointer list-none text-center text-xs font-medium text-charcoal/40 hover:text-cobalt transition-colors duration-200">
+            Impressum
+          </summary>
+          <div className="mt-4 rounded-2xl border-[1px] border-hairline bg-white/60 p-5 text-xs leading-relaxed text-charcoal/60">
+            <h2 className="text-sm font-semibold text-obsidian">Impressum</h2>
+            <p className="mt-3 font-medium text-charcoal/70">
+              Information according to § 5 TMG / § 18 MStV:
+            </p>
+            <p className="mt-2">
+              Kenvara Solivo Lwie
+              <br />
+              52064 Aachen
+            </p>
+            <p className="mt-3 font-medium text-charcoal/70">Contact:</p>
+            <p className="mt-2">
+              Email:{" "}
+              <a href="mailto:kenvara.solivo@gmail.com" className="text-cobalt hover:underline">
+                kenvara.solivo@gmail.com
+              </a>
+            </p>
+            <p className="mt-4 text-charcoal/45">
+              Note: This website is a private, non-commercial portfolio created solely for the
+              purpose of showcasing my projects to prospective employers and recruiters.
+            </p>
+          </div>
+        </details>
       </div>
     </div>
   );
