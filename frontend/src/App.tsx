@@ -210,8 +210,15 @@ function AppShell() {
 
   if (initializing) {
     return (
-      <div className="h-screen flex items-center justify-center bg-surface">
-        <p className="text-sm font-medium text-cobalt animate-pulse select-none">ALIGN</p>
+      <div className="h-screen flex flex-col items-center justify-center gap-3 bg-surface">
+        <span className="flex h-10 w-10 animate-pulse items-center justify-center rounded-xl bg-cobalt shadow-cta" aria-hidden="true">
+          <svg className="h-5 w-5 text-white" viewBox="0 0 16 16" fill="currentColor">
+            <rect x="2" y="3" width="12" height="2.5" rx="1.25" />
+            <rect x="2" y="6.75" width="9" height="2.5" rx="1.25" opacity="0.75" />
+            <rect x="5" y="10.5" width="9" height="2.5" rx="1.25" opacity="0.5" />
+          </svg>
+        </span>
+        <p className="text-sm font-extrabold tracking-[0.2em] text-obsidian select-none">ALIGN</p>
       </div>
     );
   }
@@ -224,7 +231,7 @@ function AppShell() {
   const effectiveView: View = isSignedIn ? view : "workspace";
 
   return (
-    <div className="h-screen overflow-hidden bg-white">
+    <div className="h-screen flex flex-col overflow-hidden bg-surface">
       <Header
         view={effectiveView}
         onViewChange={setView}
@@ -239,7 +246,7 @@ function AppShell() {
       />
 
       {effectiveView === "workspace" ? (
-        <main className="grid grid-cols-2 h-[calc(100vh-64px)] overflow-hidden">
+        <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 p-3 lg:p-4 overflow-y-auto lg:overflow-hidden">
           <InputPanel
             language={language}
             resumeText={resumeText}
@@ -265,7 +272,7 @@ function AppShell() {
           />
         </main>
       ) : (
-        <main className="h-[calc(100vh-64px)] overflow-y-auto bg-surface">
+        <main className="flex-1 min-h-0 overflow-y-auto">
           {effectiveView === "history" && <HistoryPage language={language} onLoadAnalysis={loadAnalysis} />}
           {effectiveView === "vault" && <VaultPage language={language} onUseResume={loadResume} />}
           {effectiveView === "jobs" && <JobsPage language={language} onUseJob={loadJob} />}

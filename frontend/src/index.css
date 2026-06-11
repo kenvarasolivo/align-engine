@@ -9,12 +9,22 @@
     height: 100%;
   }
 
+  html {
+    color-scheme: light;
+  }
+
   body {
-    @apply bg-white font-sans text-charcoal antialiased;
+    @apply bg-surface font-sans text-charcoal antialiased;
+    font-feature-settings: "cv05", "cv11";
+    text-rendering: optimizeLegibility;
   }
 
   textarea {
     resize: none;
+  }
+
+  ::selection {
+    background-color: rgb(0 82 255 / 0.12);
   }
 
   /* Discreet scrollbars to keep the workspace crisp */
@@ -30,6 +40,50 @@
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #d1d5db;
+    background: #d4d4d8;
+  }
+}
+
+@layer components {
+  /* Shared accessible focus treatment — apply to every interactive element */
+  .focus-ring {
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+  }
+
+  /* Elevated white panel resting on the surface canvas */
+  .card {
+    @apply rounded-xl border border-hairline bg-white shadow-card;
+  }
+
+  /* Ambient caps label — section headers, chrome metadata */
+  .label-caps {
+    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-charcoal/45 select-none;
+  }
+
+  /* Button language: primary (cobalt, one per region), secondary (bordered) */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-cobalt font-semibold text-white transition-all duration-150 outline-none hover:bg-cobalt-hover active:bg-cobalt-active focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-hairline bg-white font-medium text-charcoal/75 shadow-xs transition-all duration-150 outline-none hover:border-hairline-strong hover:text-obsidian focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  /* Shimmer skeleton for loading states */
+  .skeleton {
+    @apply relative isolate overflow-hidden rounded-md bg-surface-sunken;
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.75), transparent);
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }

@@ -41,6 +41,21 @@ const NAV: Record<Language, { value: View; label: string }[]> = {
   ],
 };
 
+function LogoMark() {
+  return (
+    <span
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cobalt shadow-xs"
+      aria-hidden="true"
+    >
+      <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="currentColor">
+        <rect x="2" y="3" width="12" height="2.5" rx="1.25" />
+        <rect x="2" y="6.75" width="9" height="2.5" rx="1.25" opacity="0.75" />
+        <rect x="5" y="10.5" width="9" height="2.5" rx="1.25" opacity="0.5" />
+      </svg>
+    </span>
+  );
+}
+
 export default function Header({
   view,
   onViewChange,
@@ -54,22 +69,30 @@ export default function Header({
   onGoToLogin,
 }: HeaderProps) {
   const isSignedIn = userEmail !== null;
+  const quotaRatio = usage ? usage.used_today / Math.max(usage.daily_limit, 1) : 0;
 
   return (
-    <header className="h-16 flex items-center justify-between px-6 bg-white border-b-[1px] border-hairline">
-      <div className="flex items-center gap-6 min-w-0">
-        <h1 className="text-xl font-extrabold tracking-tight text-obsidian select-none shrink-0">ALIGN</h1>
+    <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 lg:px-6 bg-white border-b border-hairline">
+      <div className="flex items-center gap-3 lg:gap-6 min-w-0">
+        {/* Brand */}
+        <div className="flex items-center gap-2.5 select-none shrink-0">
+          <LogoMark />
+          <h1 className="text-lg font-extrabold tracking-tight text-obsidian">ALIGN</h1>
+        </div>
 
         {/* Saved-data sections only exist for signed-in users */}
         {isSignedIn && (
-          <nav className="flex items-center gap-1">
+          <nav className="flex items-center gap-0.5 overflow-x-auto" aria-label="Primary">
             {NAV[language].map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => onViewChange(value)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                  view === value ? "bg-cobalt/10 text-cobalt" : "text-charcoal/60 hover:text-obsidian"
+                aria-current={view === value ? "page" : undefined}
+                className={`focus-ring whitespace-nowrap px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-150 ${
+                  view === value
+                    ? "bg-cobalt-50 text-cobalt"
+                    : "text-charcoal/55 hover:text-obsidian hover:bg-surface-sunken"
                 }`}
               >
                 {label}
@@ -79,27 +102,40 @@ export default function Header({
         )}
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Daily quota chip */}
+      <div className="flex items-center gap-2.5 lg:gap-3 shrink-0">
+        {/* Daily quota chip with depletion bar */}
         {usage && (
           <span
-            className="hidden lg:inline-flex items-center px-2.5 py-1 text-[11px] font-medium rounded-full border-[1px] border-hairline bg-surface text-charcoal"
+            className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-full border border-hairline bg-white shadow-xs"
             title={language === "de" ? "Analysen heute" : "Analyses today"}
           >
-            {usage.used_today}/{usage.daily_limit}
+            <span className="h-1.5 w-12 rounded-full bg-surface-sunken overflow-hidden" aria-hidden="true">
+              <span
+                className={`block h-full rounded-full transition-all duration-300 ease-out-quart ${
+                  quotaRatio >= 1 ? "bg-danger" : quotaRatio >= 0.8 ? "bg-warning" : "bg-cobalt"
+                }`}
+                style={{ width: `${Math.min(100, quotaRatio * 100)}%` }}
+              />
+            </span>
+            <span className="text-2xs font-semibold tabular-nums text-charcoal/70">
+              {usage.used_today}/{usage.daily_limit}
+            </span>
           </span>
         )}
 
         {/* Mode selector — only relevant in the workspace */}
         {view === "workspace" && (
-          <div className="flex items-center p-0.5 rounded-lg border-[1px] border-hairline bg-surface">
+          <div className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70" role="group">
             {MODES.map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => onModeChange(value)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                  mode === value ? "bg-white text-cobalt shadow-sm" : "text-charcoal/70 hover:text-obsidian"
+                aria-pressed={mode === value}
+                className={`focus-ring whitespace-nowrap px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
+                  mode === value
+                    ? "bg-white text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                    : "text-charcoal/60 hover:text-obsidian"
                 }`}
               >
                 {label}
@@ -109,14 +145,17 @@ export default function Header({
         )}
 
         {/* Language toggle */}
-        <div className="flex items-center p-0.5 rounded-lg border-[1px] border-hairline bg-surface">
+        <div className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70" role="group">
           {LANGUAGES.map(({ value, label }) => (
             <button
               key={value}
               type="button"
               onClick={() => onLanguageChange(value)}
-              className={`px-2.5 py-1.5 text-sm font-semibold rounded-md transition-all duration-200 ${
-                language === value ? "bg-white text-cobalt shadow-sm" : "text-charcoal/70 hover:text-obsidian"
+              aria-pressed={language === value}
+              className={`focus-ring px-2.5 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 ${
+                language === value
+                  ? "bg-white text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                  : "text-charcoal/60 hover:text-obsidian"
               }`}
             >
               {label}
@@ -126,27 +165,33 @@ export default function Header({
 
         {/* Auth status */}
         {isSignedIn ? (
-          <div className="flex items-center gap-2 pl-3 border-l-[1px] border-hairline">
-            <span className="hidden md:inline text-xs text-charcoal/50 truncate max-w-[160px]" title={userEmail}>
+          <div className="flex items-center gap-2.5 pl-3 border-l border-hairline">
+            <span
+              className="hidden md:flex h-7 w-7 items-center justify-center rounded-full bg-cobalt-50 text-2xs font-bold uppercase text-cobalt select-none"
+              aria-hidden="true"
+            >
+              {userEmail.charAt(0)}
+            </span>
+            <span className="hidden md:inline text-xs text-charcoal/50 truncate max-w-[150px]" title={userEmail}>
               {userEmail}
             </span>
             <button
               type="button"
               onClick={onSignOut}
-              className="px-2.5 py-1.5 text-xs font-medium rounded-md border-[1px] border-hairline bg-white text-charcoal/70 transition-all duration-200 hover:text-red-600 hover:border-red-200"
+              className="focus-ring px-2.5 py-1.5 text-xs font-medium rounded-lg border border-hairline bg-white text-charcoal/70 shadow-xs transition-all duration-150 hover:text-danger hover:border-danger-border"
             >
               {language === "de" ? "Abmelden" : "Sign out"}
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2 pl-3 border-l-[1px] border-hairline">
+          <div className="flex items-center gap-2.5 pl-3 border-l border-hairline">
             <span className="hidden md:inline text-xs text-charcoal/40">
               {language === "de" ? "Gast — nichts wird gespeichert" : "Guest — nothing is saved"}
             </span>
             <button
               type="button"
               onClick={onGoToLogin}
-              className="px-3 py-1.5 text-xs font-semibold rounded-md bg-cobalt text-white transition-all duration-200 hover:bg-cobalt-hover"
+              className="btn-primary px-3.5 py-1.5 text-xs shadow-xs"
             >
               {language === "de" ? "Anmelden" : "Sign in"}
             </button>

@@ -35,6 +35,7 @@ const STRINGS: Record<
     upload: string;
     extracting: string;
     dropHint: string;
+    dropFormats: string;
     uploadFailed: string;
     save: string;
     saving: string;
@@ -52,6 +53,7 @@ const STRINGS: Record<
     upload: "Upload file",
     extracting: "Extracting…",
     dropHint: "Drop your resume file",
+    dropFormats: "PDF · DOCX · TXT",
     uploadFailed: "Could not read the file.",
     save: "Save",
     saving: "Saving…",
@@ -68,6 +70,7 @@ const STRINGS: Record<
     upload: "Datei hochladen",
     extracting: "Wird extrahiert…",
     dropHint: "Lebenslauf-Datei hier ablegen",
+    dropFormats: "PDF · DOCX · TXT",
     uploadFailed: "Die Datei konnte nicht gelesen werden.",
     save: "Speichern",
     saving: "Speichert…",
@@ -101,12 +104,12 @@ function SaveButton({
       type="button"
       onClick={onClick}
       disabled={disabled || state === "saving"}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border-[1px] border-hairline bg-white transition-all duration-200 disabled:opacity-40 ${
+      className={`btn-secondary px-2.5 py-1 text-xs ${
         state === "saved"
-          ? "text-emerald-600 border-emerald-200"
+          ? "text-success-strong border-success-border hover:text-success-strong hover:border-success-border"
           : state === "failed"
-            ? "text-red-600 border-red-200"
-            : "text-charcoal/70 hover:text-cobalt hover:border-cobalt/40"
+            ? "text-danger border-danger-border hover:text-danger hover:border-danger-border"
+            : "hover:text-cobalt hover:border-cobalt/40"
       }`}
     >
       <svg
@@ -197,13 +200,18 @@ export default function InputPanel({
     if (file) void uploadResumeFile(file);
   };
 
+  const wellClass = (active = false) =>
+    `flex-1 flex min-h-0 mx-4 mb-4 rounded-xl border bg-surface/70 transition-all duration-150 ${
+      active
+        ? "border-cobalt/60 bg-cobalt-50/50"
+        : "border-hairline focus-within:border-cobalt/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-cobalt/10"
+    }`;
+
   return (
-    <section className="flex flex-col h-full overflow-hidden bg-white border-r-[1px] border-hairline">
+    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-white shadow-card">
       {/* Top half — Resume (paste, upload, or drag & drop) */}
       <div
-        className={`relative flex-1 flex flex-col min-h-0 transition-all duration-200 ${
-          isDragActive ? "bg-cobalt/5" : ""
-        }`}
+        className="relative flex-1 flex flex-col min-h-0"
         onDragOver={(event) => {
           event.preventDefault();
           setIsDragActive(true);
@@ -211,19 +219,23 @@ export default function InputPanel({
         onDragLeave={() => setIsDragActive(false)}
         onDrop={handleDrop}
       >
-        <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-charcoal/50 select-none">
-            {t.resumeLabel}
-          </span>
+        <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2.5">
+          <span className="label-caps">{t.resumeLabel}</span>
 
           <div className="flex items-center gap-2 min-w-0">
             {uploadError && (
-              <span className="text-xs text-red-600 truncate" role="alert">
+              <span className="text-xs text-danger truncate" role="alert">
                 {uploadError}
               </span>
             )}
             {!uploadError && uploadedFileName && !isExtracting && (
-              <span className="text-xs text-charcoal/50 truncate max-w-[180px]">{uploadedFileName}</span>
+              <span className="inline-flex items-center gap-1.5 max-w-[180px] truncate rounded-full border border-hairline bg-surface px-2.5 py-0.5 text-2xs font-medium text-charcoal/60">
+                <svg className="h-3 w-3 shrink-0 text-charcoal/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                  <path d="M14 2v6h6" />
+                </svg>
+                <span className="truncate">{uploadedFileName}</span>
+              </span>
             )}
             {canSave && (
               <SaveButton
@@ -237,10 +249,8 @@ export default function InputPanel({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isExtracting}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md border-[1px] border-hairline bg-white transition-all duration-200 ${
-                isExtracting
-                  ? "text-cobalt"
-                  : "text-charcoal/70 hover:text-cobalt hover:border-cobalt/40"
+              className={`btn-secondary px-2.5 py-1 text-xs ${
+                isExtracting ? "text-cobalt" : "hover:text-cobalt hover:border-cobalt/40"
               }`}
             >
               {isExtracting ? (
@@ -284,30 +294,38 @@ export default function InputPanel({
           </div>
         </div>
 
-        <textarea
-          value={resumeText}
-          onChange={(event) => onResumeChange(event.target.value)}
-          placeholder={t.resumePlaceholder}
-          spellCheck={false}
-          className="flex-1 w-full min-h-0 px-6 py-2 text-sm leading-relaxed text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/30"
-        />
+        <div className={wellClass(isDragActive)}>
+          <textarea
+            value={resumeText}
+            onChange={(event) => onResumeChange(event.target.value)}
+            placeholder={t.resumePlaceholder}
+            spellCheck={false}
+            aria-label={t.resumeLabel}
+            className="flex-1 w-full min-h-0 rounded-xl px-4 py-3 text-sm leading-relaxed text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
+          />
+        </div>
 
         {isDragActive && (
-          <div className="absolute inset-2 flex items-center justify-center rounded-lg border-2 border-dashed border-cobalt bg-white/80 pointer-events-none">
-            <span className="text-sm font-medium text-cobalt">{t.dropHint}</span>
+          <div className="absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-cobalt bg-white/85 backdrop-blur-sm pointer-events-none animate-fade-in">
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cobalt-50 text-cobalt">
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 16V4m0 0l-4 4m4-4l4 4" />
+                <path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" />
+              </svg>
+            </span>
+            <span className="text-sm font-semibold text-cobalt">{t.dropHint}</span>
+            <span className="text-2xs font-medium uppercase tracking-widest text-charcoal/40">{t.dropFormats}</span>
           </div>
         )}
       </div>
 
       {/* Hairline divider */}
-      <div className="border-t-[1px] border-hairline" />
+      <div className="border-t border-hairline" />
 
       {/* Bottom half — Job Description */}
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center justify-between gap-3 px-6 pt-4 pb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-charcoal/50 select-none">
-            {t.jobLabel}
-          </span>
+        <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2.5">
+          <span className="label-caps">{t.jobLabel}</span>
           {canSave && (
             <SaveButton
               state={jobSaveState}
@@ -317,27 +335,43 @@ export default function InputPanel({
             />
           )}
         </div>
-        <textarea
-          value={jobDescriptionText}
-          onChange={(event) => onJobDescriptionChange(event.target.value)}
-          placeholder={t.jobPlaceholder}
-          spellCheck={false}
-          className="flex-1 w-full min-h-0 px-6 py-2 text-sm leading-relaxed text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/30"
-        />
+        <div className={wellClass()}>
+          <textarea
+            value={jobDescriptionText}
+            onChange={(event) => onJobDescriptionChange(event.target.value)}
+            placeholder={t.jobPlaceholder}
+            spellCheck={false}
+            aria-label={t.jobLabel}
+            className="flex-1 w-full min-h-0 rounded-xl px-4 py-3 text-sm leading-relaxed text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
+          />
+        </div>
       </div>
 
       {/* Action bar pinned to the bottom */}
-      <div className="px-6 py-4 bg-surface border-t-[1px] border-hairline">
+      <div className="px-4 py-4 bg-surface/60 border-t border-hairline">
         {error && (
-          <p className="mb-3 text-xs leading-snug text-red-600" role="alert">
-            {error}
-          </p>
+          <div
+            className="mb-3 flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5 animate-fade-in"
+            role="alert"
+          >
+            <svg className="mt-px h-3.5 w-3.5 shrink-0 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 8v4m0 4h.01" />
+            </svg>
+            <p className="text-xs leading-snug text-danger-strong">{error}</p>
+          </div>
         )}
         <button
           type="button"
           onClick={onAnalyze}
           disabled={!canSubmit}
-          className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-cobalt text-white text-sm font-semibold transition-all duration-200 hover:bg-cobalt-hover active:scale-[0.99] disabled:opacity-40 disabled:pointer-events-none"
+          className={`focus-ring w-full h-12 inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white transition-all duration-200 ease-out-quart ${
+            isLoading
+              ? "bg-cobalt shadow-cta"
+              : canSubmit
+                ? "bg-cobalt shadow-cta hover:bg-cobalt-hover hover:shadow-cta-lg hover:-translate-y-px active:translate-y-0 active:bg-cobalt-active active:shadow-cta"
+                : "bg-cobalt/35"
+          } disabled:pointer-events-none`}
         >
           {isLoading ? (
             <>
@@ -348,7 +382,12 @@ export default function InputPanel({
               <span>{t.analyzing}</span>
             </>
           ) : (
-            <span>{t.analyze}</span>
+            <>
+              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6l2.1-2.1" />
+              </svg>
+              <span>{t.analyze}</span>
+            </>
           )}
         </button>
       </div>

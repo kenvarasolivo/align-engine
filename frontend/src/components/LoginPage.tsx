@@ -40,19 +40,36 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-surface px-4 py-12">
+      {/* Ambient backdrop: dot grid fading out + soft cobalt glow */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,black_20%,transparent_100%)] opacity-50"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_-10%,rgb(0_82_255_/_0.10),transparent)]"
+      />
+
+      <div className="relative w-full max-w-sm animate-fade-in-up">
         {/* Brand */}
         <div className="text-center mb-8 select-none">
-          <h1 className="text-5xl font-extrabold tracking-tight text-obsidian">ALIGN</h1>
-          <p className="mt-2 text-sm text-charcoal/60">
+          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cobalt shadow-cta" aria-hidden="true">
+            <svg className="h-6 w-6 text-white" viewBox="0 0 16 16" fill="currentColor">
+              <rect x="2" y="3" width="12" height="2.5" rx="1.25" />
+              <rect x="2" y="6.75" width="9" height="2.5" rx="1.25" opacity="0.75" />
+              <rect x="5" y="10.5" width="9" height="2.5" rx="1.25" opacity="0.5" />
+            </svg>
+          </span>
+          <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-obsidian">ALIGN</h1>
+          <p className="mt-2 text-sm leading-relaxed text-charcoal/55">
             Sign in to keep your analyses, resumes and saved jobs.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border-[1px] border-hairline shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-hairline shadow-lift p-6">
           {/* Sign in / Sign up toggle */}
-          <div className="flex items-center p-0.5 mb-6 rounded-lg border-[1px] border-hairline bg-surface">
+          <div className="flex items-center p-0.5 mb-6 rounded-lg border border-hairline bg-surface-sunken/70" role="group">
             {(
               [
                 { value: "signin", label: "Sign in" },
@@ -67,8 +84,11 @@ export default function LoginPage() {
                   setError(null);
                   setNotice(null);
                 }}
-                className={`flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200 ${
-                  authMode === value ? "bg-white text-cobalt shadow-sm" : "text-charcoal/70 hover:text-obsidian"
+                aria-pressed={authMode === value}
+                className={`focus-ring flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
+                  authMode === value
+                    ? "bg-white text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                    : "text-charcoal/60 hover:text-obsidian"
                 }`}
               >
                 {label}
@@ -78,7 +98,7 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-[11px] font-semibold uppercase tracking-widest text-charcoal/50 mb-1.5">
+              <label htmlFor="email" className="label-caps block mb-1.5">
                 Email
               </label>
               <input
@@ -88,12 +108,12 @@ export default function LoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full h-10 px-3 text-sm rounded-lg border-[1px] border-hairline bg-white outline-none transition-all duration-200 focus:border-cobalt/60 focus:ring-2 focus:ring-cobalt/10"
+                className="w-full h-11 px-3.5 text-sm rounded-lg border border-hairline bg-white text-charcoal shadow-xs outline-none transition-all duration-150 placeholder:text-charcoal/30 hover:border-hairline-strong focus:border-cobalt/60 focus:ring-4 focus:ring-cobalt/10"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-[11px] font-semibold uppercase tracking-widest text-charcoal/50 mb-1.5">
+              <label htmlFor="password" className="label-caps block mb-1.5">
                 Password
               </label>
               <input
@@ -104,23 +124,50 @@ export default function LoginPage() {
                 autoComplete={authMode === "signin" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full h-10 px-3 text-sm rounded-lg border-[1px] border-hairline bg-white outline-none transition-all duration-200 focus:border-cobalt/60 focus:ring-2 focus:ring-cobalt/10"
+                className="w-full h-11 px-3.5 text-sm rounded-lg border border-hairline bg-white text-charcoal shadow-xs outline-none transition-all duration-150 placeholder:text-charcoal/30 hover:border-hairline-strong focus:border-cobalt/60 focus:ring-4 focus:ring-cobalt/10"
               />
             </div>
 
             {error && (
-              <p className="text-xs leading-snug text-red-600" role="alert">
-                {error}
-              </p>
+              <div
+                className="flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5 animate-fade-in"
+                role="alert"
+              >
+                <svg className="mt-px h-3.5 w-3.5 shrink-0 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 8v4m0 4h.01" />
+                </svg>
+                <p className="text-xs leading-snug text-danger-strong">{error}</p>
+              </div>
             )}
-            {notice && <p className="text-xs leading-snug text-cobalt">{notice}</p>}
+            {notice && (
+              <div className="flex items-start gap-2 rounded-lg border border-success-border bg-success-soft px-3 py-2.5 animate-fade-in">
+                <svg className="mt-px h-3.5 w-3.5 shrink-0 text-success" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M9 12.5l2 2 4-5" />
+                </svg>
+                <p className="text-xs leading-snug text-success-strong">{notice}</p>
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-10 inline-flex items-center justify-center rounded-lg bg-cobalt text-white text-sm font-semibold transition-all duration-200 hover:bg-cobalt-hover active:scale-[0.99] disabled:opacity-40"
+              className="btn-primary w-full h-11 text-sm shadow-cta hover:shadow-cta-lg hover:-translate-y-px active:translate-y-0 active:shadow-cta transition-all duration-200 ease-out-quart"
             >
-              {isSubmitting ? "Please wait…" : authMode === "signin" ? "Sign in" : "Create account"}
+              {isSubmitting ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  <span>Please wait…</span>
+                </>
+              ) : authMode === "signin" ? (
+                "Sign in"
+              ) : (
+                "Create account"
+              )}
             </button>
           </form>
         </div>
@@ -130,7 +177,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={continueAsGuest}
-            className="text-sm font-medium text-charcoal/60 hover:text-cobalt transition-colors duration-200"
+            className="focus-ring rounded-md px-1 text-sm font-medium text-charcoal/60 hover:text-cobalt transition-colors duration-150"
           >
             Continue as guest →
           </button>
@@ -141,10 +188,10 @@ export default function LoginPage() {
 
         {/* Impressum */}
         <details className="mt-8 text-left">
-          <summary className="cursor-pointer list-none text-center text-xs font-medium text-charcoal/40 hover:text-cobalt transition-colors duration-200">
+          <summary className="focus-ring cursor-pointer list-none rounded-md text-center text-xs font-medium text-charcoal/40 hover:text-cobalt transition-colors duration-150">
             Impressum
           </summary>
-          <div className="mt-4 rounded-2xl border-[1px] border-hairline bg-white/60 p-5 text-xs leading-relaxed text-charcoal/60">
+          <div className="mt-4 rounded-2xl border border-hairline bg-white/70 backdrop-blur-sm p-5 text-xs leading-relaxed text-charcoal/60 shadow-xs">
             <h2 className="text-sm font-semibold text-obsidian">Impressum</h2>
             <p className="mt-3 font-medium text-charcoal/70">
               Information according to § 5 TMG / § 18 MStV:
@@ -157,7 +204,7 @@ export default function LoginPage() {
             <p className="mt-3 font-medium text-charcoal/70">Contact:</p>
             <p className="mt-2">
               Email:{" "}
-              <a href="mailto:kenvara.solivo@gmail.com" className="text-cobalt hover:underline">
+              <a href="mailto:kenvara.solivo@gmail.com" className="focus-ring rounded-sm text-cobalt hover:underline">
                 kenvara.solivo@gmail.com
               </a>
             </p>

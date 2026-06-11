@@ -102,23 +102,51 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
   const locale = language === "de" ? "de-DE" : "en-US";
 
   return (
-    <div className="max-w-4xl mx-auto px-6 py-10">
+    <div className="max-w-4xl mx-auto px-4 lg:px-6 py-10 animate-fade-in">
       <h2 className="text-2xl font-extrabold tracking-tight text-obsidian">{t.title}</h2>
-      <p className="mt-1 mb-8 text-sm text-charcoal/60">{t.subtitle}</p>
+      <p className="mt-1.5 mb-8 max-w-2xl text-sm leading-relaxed text-charcoal/55">{t.subtitle}</p>
 
       {error && (
-        <p className="text-sm text-red-600" role="alert">
-          {error}
-        </p>
+        <div className="flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5" role="alert">
+          <svg className="mt-px h-3.5 w-3.5 shrink-0 text-danger" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4m0 4h.01" />
+          </svg>
+          <p className="text-xs leading-snug text-danger-strong">{error}</p>
+        </div>
       )}
 
-      {!error && rows === null && <p className="text-sm text-cobalt animate-pulse">{t.loading}</p>}
+      {!error && rows === null && (
+        <div className="space-y-3" aria-busy="true" aria-label={t.loading}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="card px-5 py-4">
+              <div className="skeleton h-4 w-1/3 mb-2.5" />
+              <div className="skeleton h-3 w-48 mb-3" />
+              <div className="skeleton h-3 w-3/4" />
+            </div>
+          ))}
+        </div>
+      )}
 
-      {rows !== null && rows.length === 0 && <p className="text-sm text-charcoal/40">{t.empty}</p>}
+      {rows !== null && rows.length === 0 && (
+        <div className="flex flex-col items-center rounded-2xl border border-dashed border-hairline-strong bg-white/60 px-8 py-16 text-center">
+          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cobalt-50 text-cobalt mb-4" aria-hidden="true">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+              <path d="M14 2v6h6" />
+              <path d="M9 13h6m-6 4h6" />
+            </svg>
+          </span>
+          <p className="max-w-sm text-sm leading-relaxed text-charcoal/55">{t.empty}</p>
+        </div>
+      )}
 
       <div className="space-y-3">
         {rows?.map((row) => (
-          <div key={row.id} className="bg-white rounded-xl border-[1px] border-hairline shadow-sm px-5 py-4">
+          <div
+            key={row.id}
+            className="bg-white rounded-xl border border-hairline shadow-xs px-5 py-4 transition-shadow duration-200 hover:shadow-card"
+          >
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
                 {renamingId === row.id ? (
@@ -131,19 +159,19 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                         if (event.key === "Enter") void commitRename(row);
                         if (event.key === "Escape") setRenamingId(null);
                       }}
-                      className="flex-1 h-8 px-2 text-sm rounded-md border-[1px] border-cobalt/40 outline-none focus:ring-2 focus:ring-cobalt/10"
+                      className="flex-1 h-8 px-2.5 text-sm rounded-lg border border-cobalt/50 bg-white outline-none focus:ring-4 focus:ring-cobalt/10 transition-shadow duration-150"
                     />
                     <button
                       type="button"
                       onClick={() => void commitRename(row)}
-                      className="px-2.5 py-1 text-xs font-semibold rounded-md bg-cobalt text-white hover:bg-cobalt-hover"
+                      className="btn-primary px-2.5 py-1 text-xs"
                     >
                       {t.saveTitle}
                     </button>
                     <button
                       type="button"
                       onClick={() => setRenamingId(null)}
-                      className="px-2.5 py-1 text-xs font-medium rounded-md border-[1px] border-hairline text-charcoal/70"
+                      className="btn-secondary px-2.5 py-1 text-xs"
                     >
                       {t.cancel}
                     </button>
@@ -151,7 +179,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                 ) : (
                   <>
                     <p className="text-sm font-semibold text-obsidian truncate">{row.title}</p>
-                    <p className="mt-0.5 text-xs text-charcoal/50">
+                    <p className="mt-0.5 text-xs tabular-nums text-charcoal/50">
                       {t.lastUsed}:{" "}
                       {row.last_used_at
                         ? new Date(row.last_used_at).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })
@@ -166,7 +194,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                   <button
                     type="button"
                     onClick={() => onUseResume(row)}
-                    className="px-3 py-1.5 text-xs font-semibold rounded-md bg-cobalt text-white transition-all duration-200 hover:bg-cobalt-hover"
+                    className="btn-primary px-3 py-1.5 text-xs"
                   >
                     {t.use}
                   </button>
@@ -176,17 +204,17 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                       setRenamingId(row.id);
                       setRenameValue(row.title);
                     }}
-                    className="px-3 py-1.5 text-xs font-medium rounded-md border-[1px] border-hairline bg-white text-charcoal/70 transition-all duration-200 hover:text-cobalt hover:border-cobalt/40"
+                    className="btn-secondary px-3 py-1.5 text-xs hover:text-cobalt hover:border-cobalt/40"
                   >
                     {t.rename}
                   </button>
                   <button
                     type="button"
                     onClick={() => void handleDelete(row)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md border-[1px] transition-all duration-200 ${
+                    className={`focus-ring px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 ${
                       confirmingId === row.id
-                        ? "bg-red-600 border-red-600 text-white"
-                        : "border-hairline bg-white text-charcoal/70 hover:text-red-600 hover:border-red-200"
+                        ? "bg-danger border-danger text-white shadow-xs"
+                        : "border-hairline bg-white text-charcoal/70 shadow-xs hover:text-danger hover:border-danger-border"
                     }`}
                   >
                     {confirmingId === row.id ? t.confirmDelete : t.delete}
