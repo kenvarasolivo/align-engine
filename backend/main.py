@@ -33,12 +33,12 @@ app.add_middleware(
 )
 
 
-@app.get("/api/health")
+@app.get("/health")
 async def health() -> dict:
     return {"status": "ok", "engine": "ALIGN"}
 
 
-@app.post("/api/extract", response_model=ExtractResponse)
+@app.post("/extract", response_model=ExtractResponse)
 async def extract(file: UploadFile = File(...)) -> ExtractResponse:
     """Extract plain text from an uploaded resume file (PDF, DOCX, or TXT)."""
     data = await file.read()
@@ -50,7 +50,7 @@ async def extract(file: UploadFile = File(...)) -> ExtractResponse:
     return ExtractResponse(filename=filename, text=text)
 
 
-@app.post("/api/analyze", response_model=AnalysisResponse)
+@app.post("/analyze", response_model=AnalysisResponse)
 async def analyze(payload: AnalyzeRequest) -> AnalysisResponse:
     try:
         return await run_analysis(payload)
