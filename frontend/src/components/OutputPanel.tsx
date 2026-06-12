@@ -266,7 +266,7 @@ export default function OutputPanel({
             placeholder={t.draftEmpty}
             spellCheck={false}
             aria-label={t.draftTab}
-            className="flex-1 w-full min-h-0 px-6 lg:px-8 py-5 text-[15px] leading-7 text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
+            className="flex-1 w-full min-h-0 px-6 lg:px-8 py-5 text-[11pt] leading-relaxed [font-family:Calibri,Carlito,'Segoe_UI',Arial,sans-serif] text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
           />
         </div>
       )}
