@@ -1,3 +1,4 @@
+import { LogoMark } from "./Logo";
 import type { Language, Mode, UsageInfo, View } from "../types";
 
 interface HeaderProps {
@@ -12,6 +13,8 @@ interface HeaderProps {
   usage: UsageInfo | null;
   onSignOut: () => void;
   onGoToLogin: () => void;
+  /** Returns to the marketing landing page. */
+  onLogoClick: () => void;
 }
 
 const MODES: { value: Mode; label: string }[] = [
@@ -41,21 +44,6 @@ const NAV: Record<Language, { value: View; label: string }[]> = {
   ],
 };
 
-function LogoMark() {
-  return (
-    <span
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cobalt shadow-xs"
-      aria-hidden="true"
-    >
-      <svg className="h-3.5 w-3.5 text-white" viewBox="0 0 16 16" fill="currentColor">
-        <rect x="2" y="3" width="12" height="2.5" rx="1.25" />
-        <rect x="2" y="6.75" width="9" height="2.5" rx="1.25" opacity="0.75" />
-        <rect x="5" y="10.5" width="9" height="2.5" rx="1.25" opacity="0.5" />
-      </svg>
-    </span>
-  );
-}
-
 export default function Header({
   view,
   onViewChange,
@@ -67,6 +55,7 @@ export default function Header({
   usage,
   onSignOut,
   onGoToLogin,
+  onLogoClick,
 }: HeaderProps) {
   const isSignedIn = userEmail !== null;
   const quotaRatio = usage ? usage.used_today / Math.max(usage.daily_limit, 1) : 0;
@@ -74,11 +63,16 @@ export default function Header({
   return (
     <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 lg:px-6 bg-white border-b border-hairline">
       <div className="flex items-center gap-3 lg:gap-6 min-w-0">
-        {/* Brand */}
-        <div className="flex items-center gap-2.5 select-none shrink-0">
-          <LogoMark />
+        {/* Brand — returns to the landing page */}
+        <button
+          type="button"
+          onClick={onLogoClick}
+          aria-label="Back to the ALIGN landing page"
+          className="focus-ring flex items-center gap-2.5 rounded-lg select-none shrink-0"
+        >
+          <LogoMark className="h-7 w-7" />
           <h1 className="text-lg font-extrabold tracking-tight text-obsidian">ALIGN</h1>
-        </div>
+        </button>
 
         {/* Saved-data sections only exist for signed-in users */}
         {isSignedIn && (

@@ -1,13 +1,19 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { LogoMark } from "./Logo";
 
-type AuthMode = "signin" | "signup";
+export type AuthMode = "signin" | "signup";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  /** Which tab to open on — "signup" when arriving via the landing page's Register. */
+  initialMode?: AuthMode;
+}
+
+export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
   const { signIn, signUp, continueAsGuest } = useAuth();
 
-  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+  const [authMode, setAuthMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -54,13 +60,7 @@ export default function LoginPage() {
       <div className="relative w-full max-w-sm animate-fade-in-up">
         {/* Brand */}
         <div className="text-center mb-8 select-none">
-          <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-cobalt shadow-cta" aria-hidden="true">
-            <svg className="h-6 w-6 text-white" viewBox="0 0 16 16" fill="currentColor">
-              <rect x="2" y="3" width="12" height="2.5" rx="1.25" />
-              <rect x="2" y="6.75" width="9" height="2.5" rx="1.25" opacity="0.75" />
-              <rect x="5" y="10.5" width="9" height="2.5" rx="1.25" opacity="0.5" />
-            </svg>
-          </span>
+          <LogoMark className="mx-auto h-14 w-14" />
           <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-obsidian">ALIGN</h1>
           <p className="mt-2 text-sm leading-relaxed text-charcoal/55">
             Sign in to keep your analyses, resumes and saved jobs.

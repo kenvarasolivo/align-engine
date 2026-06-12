@@ -3,10 +3,13 @@ import Header from "./components/Header";
 import InputPanel from "./components/InputPanel";
 import OutputPanel from "./components/OutputPanel";
 import LoginPage from "./components/LoginPage";
+import type { AuthMode } from "./components/LoginPage";
+import LandingPage from "./components/LandingPage";
 import HistoryPage from "./components/HistoryPage";
 import VaultPage from "./components/VaultPage";
 import JobsPage from "./components/JobsPage";
 import InsightsPage from "./components/InsightsPage";
+import { LogoMark } from "./components/Logo";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import * as db from "./lib/db";
 import type {
@@ -24,8 +27,51 @@ import type {
 export default function App() {
   return (
     <AuthProvider>
-      <AppShell />
+      <Root />
     </AuthProvider>
+  );
+}
+
+/**
+ * Minimal History-API routing: "/" is the marketing landing page, "/app"
+ * (and subpaths) is the dashboard. Unknown paths fall back to the landing
+ * page; reloads keep the user wherever they were.
+ */
+function Root() {
+  const { exitGuest } = useAuth();
+  const [path, setPath] = useState(() => window.location.pathname);
+  // Which tab the LoginPage opens on when entering /app from the landing nav.
+  const [authMode, setAuthMode] = useState<AuthMode>("signin");
+
+  const navigate = (to: string) => {
+    if (to !== window.location.pathname) {
+      window.history.pushState({}, "", to);
+    }
+    setPath(to);
+    window.scrollTo({ top: 0 });
+  };
+
+  useEffect(() => {
+    const onPopState = () => setPath(window.location.pathname);
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  if (path.startsWith("/app")) {
+    return <AppShell navigate={navigate} initialAuthMode={authMode} />;
+  }
+
+  return (
+    <LandingPage
+      navigate={navigate}
+      onOpenAuth={(mode) => {
+        setAuthMode(mode);
+        // A previous guest session would skip the login page — leave it
+        // so Log in / Register actually show the auth form.
+        exitGuest();
+        navigate("/app");
+      }}
+    />
   );
 }
 
@@ -35,7 +81,12 @@ function deriveTitle(text: string, fallback: string): string {
   return firstLine.length > 60 ? `${firstLine.slice(0, 57)}…` : firstLine;
 }
 
-function AppShell() {
+interface AppShellProps {
+  navigate: (to: string) => void;
+  initialAuthMode: AuthMode;
+}
+
+function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const { authEnabled, initializing, session, user, isGuest, exitGuest, signOut } = useAuth();
 
   const [view, setView] = useState<View>("workspace");
@@ -211,20 +262,14 @@ function AppShell() {
   if (initializing) {
     return (
       <div className="h-screen flex flex-col items-center justify-center gap-3 bg-surface">
-        <span className="flex h-10 w-10 animate-pulse items-center justify-center rounded-xl bg-cobalt shadow-cta" aria-hidden="true">
-          <svg className="h-5 w-5 text-white" viewBox="0 0 16 16" fill="currentColor">
-            <rect x="2" y="3" width="12" height="2.5" rx="1.25" />
-            <rect x="2" y="6.75" width="9" height="2.5" rx="1.25" opacity="0.75" />
-            <rect x="5" y="10.5" width="9" height="2.5" rx="1.25" opacity="0.5" />
-          </svg>
-        </span>
+        <LogoMark className="h-12 w-12 animate-pulse" />
         <p className="text-sm font-extrabold tracking-[0.2em] text-obsidian select-none">ALIGN</p>
       </div>
     );
   }
 
   if (authEnabled && !session && !isGuest) {
-    return <LoginPage />;
+    return <LoginPage initialMode={initialAuthMode} />;
   }
 
   const isSignedIn = Boolean(session);
@@ -243,6 +288,7 @@ function AppShell() {
         usage={usage}
         onSignOut={handleSignOut}
         onGoToLogin={exitGuest}
+        onLogoClick={() => navigate("/")}
       />
 
       {effectiveView === "workspace" ? (

@@ -82,11 +82,22 @@ export default {
           "0%": { transform: "translateX(-100%)" },
           "100%": { transform: "translateX(400%)" },
         },
+        // Landing ambience: gentle product-visual float + slow glow drift
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-7px)" },
+        },
+        drift: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(4%, -4%) scale(1.08)" },
+        },
       },
       animation: {
         "fade-in": "fade-in 200ms ease-out both",
         "fade-in-up": "fade-in-up 350ms cubic-bezier(0.16, 1, 0.3, 1) both",
         indeterminate: "indeterminate 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite",
+        float: "float 7s ease-in-out infinite",
+        drift: "drift 16s ease-in-out infinite",
       },
       transitionTimingFunction: {
         "out-quart": "cubic-bezier(0.165, 0.84, 0.44, 1)",

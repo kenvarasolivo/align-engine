@@ -1,4 +1,5 @@
 {
+  "rewrites": [{ "source": "/app/:path*", "destination": "/index.html" }],
   "experimentalServices": {
     "frontend": {
       "entrypoint": "frontend",
