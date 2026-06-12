@@ -246,6 +246,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
 
   const handleSignOut = async () => {
     await signOut();
+    navigate("/");
     // Leave nothing of the previous user behind on a shared machine.
     setView("workspace");
     setResumeText("");
