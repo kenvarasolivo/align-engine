@@ -234,7 +234,10 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setActiveResumeId(row.resume_id);
     setActiveJobId(row.job_description_id);
     setResult({
-      matching_skills: row.matching_skills,
+      match_score: row.match_score ?? 0,
+      score_rationale: row.score_rationale ?? "",
+      // Stored rows keep only skill names; evidence isn't persisted.
+      matching_skills: row.matching_skills.map((skill) => ({ skill, evidence: null })),
       skill_gaps: row.skill_gaps,
       generated_draft: row.generated_draft,
       analysis_id: row.id,

@@ -11,9 +11,18 @@ export interface UsageInfo {
   daily_limit: number;
 }
 
+/** A matching skill paired with verbatim evidence from the resume. */
+export interface SkillMatch {
+  skill: string;
+  /** Resume quote backing the skill; null for older history rows (not persisted). */
+  evidence?: string | null;
+}
+
 /** Response of POST /api/analyze. */
 export interface AnalysisResult {
-  matching_skills: string[];
+  match_score: number;
+  score_rationale: string;
+  matching_skills: SkillMatch[];
   skill_gaps: string[];
   generated_draft: string;
   analysis_id?: string | null;
@@ -50,6 +59,8 @@ export interface AnalysisRow {
   language: Language;
   matching_skills: string[];
   skill_gaps: string[];
+  match_score: number | null;
+  score_rationale: string | null;
   generated_draft: string;
   final_draft: string | null;
   prompt_tokens: number | null;

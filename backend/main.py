@@ -107,8 +107,12 @@ async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(No
                     "job_description_snapshot": payload.job_description_text,
                     "mode": payload.mode,
                     "language": payload.language,
-                    "matching_skills": result.matching_skills,
+                    # Store skills as plain strings (the column is text[]); the
+                    # per-skill evidence is only surfaced live, not persisted.
+                    "matching_skills": [m.skill for m in result.matching_skills],
                     "skill_gaps": result.skill_gaps,
+                    "match_score": result.match_score,
+                    "score_rationale": result.score_rationale,
                     "generated_draft": result.generated_draft,
                     "prompt_tokens": prompt_tokens,
                     "output_tokens": output_tokens,

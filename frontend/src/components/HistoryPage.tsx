@@ -170,6 +170,19 @@ export default function HistoryPage({ language, onLoadAnalysis }: HistoryPagePro
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  {row.match_score != null && (
+                    <span
+                      className={`px-2 py-0.5 text-2xs font-bold tabular-nums rounded-full border ${
+                        row.match_score >= 75
+                          ? "text-success-strong bg-success-soft border-success-border"
+                          : row.match_score >= 45
+                            ? "text-cobalt bg-cobalt-50 border-cobalt/30"
+                            : "text-warning-strong bg-warning-soft border-warning-border"
+                      }`}
+                    >
+                      {row.match_score}%
+                    </span>
+                  )}
                   <span className="px-2 py-0.5 text-2xs font-medium rounded-full bg-surface border border-hairline text-charcoal/70">
                     {t.modeLabels[row.mode] ?? row.mode}
                   </span>

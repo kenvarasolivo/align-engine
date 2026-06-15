@@ -31,15 +31,56 @@ class ExtractResponse(BaseModel):
     text: str = Field(..., description="Extracted plain text content.")
 
 
+class SkillMatch(BaseModel):
+    """A matching skill paired with verbatim evidence from the resume.
+
+    The evidence anchors every claimed alignment to a real line in the
+    candidate's resume, so the result is verifiable rather than asserted.
+    """
+
+    skill: str = Field(
+        ...,
+        description=(
+            "Short tag-style phrase (2-4 words) naming an alignment present in BOTH the resume "
+            "and the job description, written in the requested output language."
+        ),
+    )
+    evidence: str = Field(
+        ...,
+        description=(
+            "A short verbatim quote (or the closest phrase) FROM THE RESUME that proves the "
+            "candidate has this skill. Must be drawn from the resume text — never invented. "
+            "Keep it under ~15 words; written in the resume's own language."
+        ),
+    )
+
+
 class AnalysisResponse(BaseModel):
     """Structured Output contract enforced on the Gemini response."""
 
-    matching_skills: List[str] = Field(
+    match_score: int = Field(
+        ...,
+        ge=0,
+        le=100,
+        description=(
+            "Overall alignment score from 0 to 100 — how well the resume covers the job "
+            "description's core requirements. 0 = no overlap; 100 = essentially every key "
+            "requirement is credibly evidenced. Be honest and calibrated: most genuine "
+            "applications land between 40 and 85."
+        ),
+    )
+    score_rationale: str = Field(
+        ...,
+        description=(
+            "One concise sentence (in the requested output language) justifying the score: the "
+            "candidate's standout strength and the main thing holding the score back."
+        ),
+    )
+    matching_skills: List[SkillMatch] = Field(
         ...,
         description=(
             "Exactly the top 3 strongest technical/professional alignments that appear in BOTH "
-            "the resume and the job description. Short tag-style phrases (2-4 words each), "
-            "written in the requested output language."
+            "the resume and the job description, each paired with verbatim resume evidence."
         ),
     )
     skill_gaps: List[str] = Field(

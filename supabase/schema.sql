@@ -58,12 +58,18 @@ create table if not exists public.analyses (
   language text not null check (language in ('en', 'de')),
   matching_skills text[] not null default '{}',
   skill_gaps text[] not null default '{}',
+  match_score integer,
+  score_rationale text,
   generated_draft text not null,
   final_draft text,
   prompt_tokens integer,
   output_tokens integer,
   created_at timestamptz not null default now()
 );
+
+-- Additive columns for existing deployments (the alignment score + its rationale).
+alter table public.analyses add column if not exists match_score integer;
+alter table public.analyses add column if not exists score_rationale text;
 
 create index if not exists analyses_user_idx on public.analyses (user_id, created_at desc);
 

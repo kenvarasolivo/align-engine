@@ -16,6 +16,7 @@ const STRINGS: Record<
     analysisTab: string;
     draftTab: string;
     matchingSkills: string;
+    evidenceLabel: string;
     skillGaps: string;
     emptyTitle: string;
     empty: string;
@@ -31,6 +32,7 @@ const STRINGS: Record<
     analysisTab: "Semantic Analysis",
     draftTab: "Draft Editor",
     matchingSkills: "Matching Skills",
+    evidenceLabel: "From your resume:",
     skillGaps: "Skill Gaps",
     emptyTitle: "Ready to align",
     empty: "Run an alignment analysis to populate this panel.",
@@ -45,6 +47,7 @@ const STRINGS: Record<
     analysisTab: "Semantische Analyse",
     draftTab: "Entwurfseditor",
     matchingSkills: "Übereinstimmende Kompetenzen",
+    evidenceLabel: "Aus Ihrem Lebenslauf:",
     skillGaps: "Kompetenzlücken",
     emptyTitle: "Bereit zum Abgleich",
     empty: "Starten Sie eine Analyse, um dieses Panel zu füllen.",
@@ -148,8 +151,7 @@ export default function OutputPanel({
     { value: "draft", label: t.draftTab },
   ];
 
-  const totalSkills = result ? result.matching_skills.length + result.skill_gaps.length : 0;
-  const scorePct = result && totalSkills > 0 ? Math.round((result.matching_skills.length / totalSkills) * 100) : 0;
+  const scorePct = result ? Math.max(0, Math.min(100, Math.round(result.match_score ?? 0))) : 0;
   const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0;
 
   return (
@@ -186,6 +188,9 @@ export default function OutputPanel({
                 <ScoreRing pct={scorePct} />
                 <div className="min-w-0">
                   <p className="label-caps">{t.scoreLabel}</p>
+                  {result.score_rationale && (
+                    <p className="mt-1 text-sm leading-relaxed text-charcoal/75">{result.score_rationale}</p>
+                  )}
                   <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
                     <span className="inline-flex items-center gap-1.5 font-semibold text-success-strong">
                       <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
@@ -199,22 +204,30 @@ export default function OutputPanel({
                 </div>
               </div>
 
-              {/* Matching skills */}
+              {/* Matching skills — each grounded in a resume quote */}
               <div>
                 <h2 className="label-caps mb-3">{t.matchingSkills}</h2>
-                <div className="flex flex-wrap gap-2">
-                  {result.matching_skills.map((skill) => (
-                    <span
-                      key={skill}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-success-strong bg-success-soft rounded-full border border-success-border"
+                <ul className="space-y-2">
+                  {result.matching_skills.map((match) => (
+                    <li
+                      key={match.skill}
+                      className="rounded-lg border border-success-border bg-success-soft px-3.5 py-2.5"
                     >
-                      <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                      {skill}
-                    </span>
+                      <div className="flex items-center gap-1.5 text-sm font-semibold text-success-strong">
+                        <svg className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M20 6L9 17l-5-5" />
+                        </svg>
+                        {match.skill}
+                      </div>
+                      {match.evidence && (
+                        <p className="mt-1.5 pl-5 text-xs leading-relaxed text-charcoal/70">
+                          <span className="font-medium text-charcoal/45">{t.evidenceLabel} </span>
+                          <span className="italic">“{match.evidence}”</span>
+                        </p>
+                      )}
+                    </li>
                   ))}
-                </div>
+                </ul>
               </div>
 
               {/* Skill gaps */}
