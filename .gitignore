@@ -4,6 +4,12 @@ __pycache__/
 .venv/
 backend/.env
 
+# Test / coverage artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
 # Node
 node_modules/
 frontend/dist/

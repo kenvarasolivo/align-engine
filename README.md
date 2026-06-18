@@ -83,6 +83,29 @@ cd frontend; npm run dev
 
 Then open http://localhost:5173 (Vite proxies `/api/*` to the backend on port 8000).
 
+## Testing
+
+The backend ships with a `pytest` suite (offline — no real Gemini or Supabase
+calls) that focuses on the LLM boundary: schema enforcement, regression tests
+over a golden set of recorded model outputs, and full API-pipeline tests with
+the AI mocked.
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+pytest --cov=app --cov=main --cov-report=term-missing
+```
+
+What's covered:
+
+- **Schema enforcement** ([`tests/test_schemas.py`](backend/tests/test_schemas.py)) — proves the `AnalysisResponse` Pydantic contract rejects malformed model output (non-list fields, out-of-range scores, missing evidence) instead of passing it downstream.
+- **Golden-set regression** ([`tests/test_golden_regression.py`](backend/tests/test_golden_regression.py)) — replays recorded Gemini responses for real resume + job-description pairs through the live `run_analysis` pipeline and asserts the structured contract and per-case expectations still hold.
+- **Gemini service** ([`tests/test_gemini_service.py`](backend/tests/test_gemini_service.py)) — the network boundary is mocked; verifies the Pydantic schema is wired in as `response_schema`, the parsed/raw-JSON paths, and token accounting.
+- **API pipeline** ([`tests/test_analyze_endpoint.py`](backend/tests/test_analyze_endpoint.py), [`tests/test_analyze_authenticated.py`](backend/tests/test_analyze_authenticated.py)) — FastAPI `TestClient` exercises validation, error mapping (500/502/429/401), quota enforcement, and the signed-in persistence path.
+
+Current coverage: **94%** across `app/` and `main.py`.
+
 ## Usage
 
 1. Sign in (or **Continue as guest** — fully functional, nothing saved).

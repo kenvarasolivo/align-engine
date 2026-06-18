@@ -1,0 +1,35 @@
+{
+  "backend-python-strong-fit": {
+    "match_score": 78,
+    "score_rationale": "Strong Python/FastAPI and PostgreSQL alignment; lacks demonstrated Kubernetes experience.",
+    "matching_skills": [
+      {"skill": "Python", "evidence": "Backend engineer with 4 years of Python"},
+      {"skill": "REST APIs", "evidence": "Built and operated FastAPI microservices"},
+      {"skill": "PostgreSQL", "evidence": "designed PostgreSQL schemas"}
+    ],
+    "skill_gaps": ["Kubernetes", "Service mesh", "Observability"],
+    "generated_draft": "Subject: Backend Engineer — Python & FastAPI\n\nHi [Recipient Name],\n\nI build and operate Python FastAPI services backed by PostgreSQL, and I ship them through GitHub Actions CI. Your backend role lines up closely with that work.\n\nWould you be open to a short call?\n\nBest,\n[Your Name]"
+  },
+  "frontend-applying-to-backend-weak-fit": {
+    "match_score": 38,
+    "score_rationale": "Solid frontend craft, but the role demands backend Python and distributed systems the resume does not evidence.",
+    "matching_skills": [
+      {"skill": "JavaScript runtime", "evidence": "Some Node.js scripting"},
+      {"skill": "TypeScript", "evidence": "specializing in React and TypeScript"},
+      {"skill": "Web fundamentals", "evidence": "Built responsive UIs and design systems"}
+    ],
+    "skill_gaps": ["Python", "Kafka", "Distributed systems", "PostgreSQL at scale"],
+    "generated_draft": "Subject: Exploring the Backend Engineer role\n\nHi [Recipient Name],\n\nMy background is frontend (React/TypeScript), and I'm working toward backend depth. I'd love to learn what the team values most for this role.\n\nThanks,\n[Your Name]"
+  },
+  "data-scientist-anschreiben-de": {
+    "match_score": 58,
+    "score_rationale": "Fundierte Python-/ML-Grundlagen; es fehlt nachweisbare MLOps- und Deployment-Erfahrung.",
+    "matching_skills": [
+      {"skill": "Python", "evidence": "Python, pandas, scikit-learn"},
+      {"skill": "Machine Learning", "evidence": "Aufbau von ML-Modellen"},
+      {"skill": "SQL", "evidence": "Erfahrung mit SQL und Datenvisualisierung"}
+    ],
+    "skill_gaps": ["MLOps", "Docker", "GCP"],
+    "generated_draft": "Bewerbung als Machine Learning Engineer\n\nSehr geehrte Damen und Herren,\n\nals Data Scientist mit Python- und ML-Erfahrung bringe ich die fachliche Grundlage für diese Rolle mit.\n\nMit freundlichen Grüßen\nMax Mustermann"
+  }
+}

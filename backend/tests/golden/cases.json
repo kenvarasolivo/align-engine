@@ -1,0 +1,41 @@
+[
+  {
+    "id": "backend-python-strong-fit",
+    "request": {
+      "resume_text": "Backend engineer with 4 years of Python. Built and operated FastAPI microservices, designed PostgreSQL schemas, and set up CI pipelines with GitHub Actions. Comfortable with Docker.",
+      "job_description_text": "We are hiring a Backend Engineer. Must have strong Python, experience building REST APIs, relational databases (PostgreSQL), and containerization with Docker. Kubernetes is a plus.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expectations": {
+      "match_score_min": 60,
+      "expected_gaps_subset": ["Kubernetes"]
+    }
+  },
+  {
+    "id": "frontend-applying-to-backend-weak-fit",
+    "request": {
+      "resume_text": "Frontend developer specializing in React and TypeScript. Built responsive UIs and design systems. Some Node.js scripting.",
+      "job_description_text": "Senior Backend Engineer needed: deep Python, distributed systems, message queues (Kafka), and PostgreSQL at scale.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expectations": {
+      "match_score_max": 55,
+      "expected_gaps_subset": ["Python", "Kafka"]
+    }
+  },
+  {
+    "id": "data-scientist-anschreiben-de",
+    "request": {
+      "resume_text": "Data Scientist mit 3 Jahren Erfahrung. Python, pandas, scikit-learn, und Aufbau von ML-Modellen. Erfahrung mit SQL und Datenvisualisierung.",
+      "job_description_text": "Wir suchen einen Machine Learning Engineer mit Python, Erfahrung im Deployment von Modellen (MLOps), Docker und Cloud (GCP).",
+      "mode": "anschreiben",
+      "language": "de"
+    },
+    "expectations": {
+      "match_score_min": 45,
+      "expected_gaps_subset": ["MLOps"]
+    }
+  }
+]
