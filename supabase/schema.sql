@@ -109,3 +109,76 @@ alter table public.usage_log enable row level security;
 drop policy if exists "usage_log select own" on public.usage_log;
 create policy "usage_log select own" on public.usage_log
   for select using (auth.uid() = user_id);
+
+-- ============================================================
+-- Skill knowledge base (RAG / vector search via pgvector).
+-- A curated library of skill "cards" embedded with Gemini
+-- gemini-embedding-001 (768-dim, MRL-truncated). The backend retrieves the
+-- nearest cards to a candidate's skill gaps and grounds the
+-- "Skill Coach" guidance in them instead of free-form LLM output.
+--
+-- Populate with:  python -m scripts.ingest_kb   (from backend/)
+-- ============================================================
+create extension if not exists vector;
+
+create table if not exists public.skill_kb (
+  id uuid primary key default gen_random_uuid(),
+  slug text unique not null,
+  name text not null,
+  category text,
+  summary text not null,
+  how_to_close text not null,
+  keywords text[] not null default '{}',
+  -- Must match EMBED_DIM in backend/app/services/embedding_service.py.
+  embedding vector(768),
+  updated_at timestamptz not null default now()
+);
+
+-- Approximate nearest-neighbour index for cosine distance. HNSW gives
+-- fast, high-recall search; the KB is small so this is instant either way,
+-- but the index is what makes the pattern scale.
+create index if not exists skill_kb_embedding_idx
+  on public.skill_kb using hnsw (embedding vector_cosine_ops);
+
+-- The KB is non-sensitive reference data. Enable RLS and allow read-only
+-- access; writes go exclusively through the service role (ingest script),
+-- which bypasses RLS.
+alter table public.skill_kb enable row level security;
+
+drop policy if exists "skill_kb read" on public.skill_kb;
+create policy "skill_kb read" on public.skill_kb
+  for select using (true);
+
+-- KNN search RPC: returns the cards closest to a query embedding, with a
+-- cosine similarity score in [0,1] (1 = identical). Called over PostgREST
+-- as /rest/v1/rpc/match_skill_kb by app/services/retrieval_service.py.
+create or replace function public.match_skill_kb(
+  query_embedding vector(768),
+  match_count int default 4,
+  min_similarity float default 0.0
+)
+returns table (
+  slug text,
+  name text,
+  category text,
+  summary text,
+  how_to_close text,
+  keywords text[],
+  similarity float
+)
+language sql stable
+as $$
+  select
+    kb.slug,
+    kb.name,
+    kb.category,
+    kb.summary,
+    kb.how_to_close,
+    kb.keywords,
+    1 - (kb.embedding <=> query_embedding) as similarity
+  from public.skill_kb kb
+  where kb.embedding is not null
+    and 1 - (kb.embedding <=> query_embedding) >= min_similarity
+  order by kb.embedding <=> query_embedding
+  limit match_count;
+$$;

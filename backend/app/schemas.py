@@ -100,6 +100,76 @@ class AnalysisResponse(BaseModel):
     )
 
 
+class RetrievedSkill(BaseModel):
+    """A knowledge-base card retrieved from pgvector for a skill gap.
+
+    Surfaced to the client as the grounding behind the coach's advice, so the
+    guidance is auditable rather than asserted (the same evidence philosophy
+    as SkillMatch, applied to retrieval).
+    """
+
+    slug: str = Field(..., description="Stable identifier of the KB card.")
+    name: str = Field(..., description="Human-readable skill name.")
+    category: Optional[str] = Field(None, description="Skill category, e.g. 'Infrastructure'.")
+    summary: str = Field(..., description="What the skill is.")
+    how_to_close: str = Field(..., description="Concrete guidance for closing the gap.")
+    similarity: float = Field(..., description="Cosine similarity to the query gap, 0-1 (higher = closer).")
+
+
+class SkillCoachRequest(BaseModel):
+    """Inbound payload for POST /skill-coach."""
+
+    skill_gaps: List[str] = Field(
+        ...,
+        min_length=1,
+        description="The skill gaps to coach on — typically the skill_gaps from a prior /analyze run.",
+    )
+    language: Language = Field("en", description="Strict output locale: 'en' or 'de'.")
+
+
+class SkillPlanItem(BaseModel):
+    """One grounded recommendation, citing the KB card it draws from."""
+
+    gap: str = Field(..., description="The skill gap this item addresses.")
+    guidance: str = Field(
+        ...,
+        description=(
+            "Two to three sentences of concrete, actionable advice for closing the gap, "
+            "grounded ONLY in the provided knowledge-base context."
+        ),
+    )
+    source_slug: str = Field(
+        ...,
+        description="The slug of the knowledge-base card this guidance is grounded in.",
+    )
+
+
+class SkillCoachPlan(BaseModel):
+    """Structured Output contract for the RAG generation step."""
+
+    summary: str = Field(
+        ...,
+        description="One or two sentences framing the candidate's biggest upskilling priorities.",
+    )
+    items: List[SkillPlanItem] = Field(
+        ...,
+        description="One grounded recommendation per addressable skill gap.",
+    )
+
+
+class SkillCoachResponse(SkillCoachPlan):
+    """API response for POST /skill-coach: the plan plus its retrieval sources."""
+
+    sources: List[RetrievedSkill] = Field(
+        default_factory=list,
+        description="The knowledge-base cards retrieved from pgvector that grounded the plan.",
+    )
+    grounded: bool = Field(
+        True,
+        description="False when retrieval was unavailable and guidance fell back to ungrounded output.",
+    )
+
+
 class UsageInfo(BaseModel):
     """Per-user quota snapshot returned alongside an analysis."""
 

@@ -4,9 +4,9 @@
 
 ## Architecture
 
-- `backend/` — FastAPI + the official `google-genai` SDK (`gemini-2.5-flash`) with Structured Outputs enforced via a Pydantic schema. Verifies Supabase JWTs, enforces daily quotas, and persists analysis runs.
+- `backend/` — FastAPI + the official `google-genai` SDK (`gemini-2.5-flash`) with Structured Outputs enforced via a Pydantic schema. Verifies Supabase JWTs, enforces daily quotas, persists analysis runs, and serves a **retrieval-augmented Skill Coach** backed by pgvector.
 - `frontend/` — React + Vite + Tailwind CSS, viewport-locked 50/50 split workspace, plus signed-in views for history, resume vault, saved jobs, and insights (talks to Supabase directly under RLS).
-- `supabase/` — SQL schema for the Postgres tables and row-level-security policies.
+- `supabase/` — SQL schema for the Postgres tables, row-level-security policies, and the **pgvector** extension (skill knowledge base + cosine-KNN search function).
 
 ## Features
 
@@ -15,6 +15,7 @@
 - **Resume vault** — save resume versions once; the last-used one auto-loads on your next visit.
 - **Saved jobs** — bookmark job descriptions and reanalyze them against any resume later.
 - **Insights** — aggregated across all runs: your most-matched skills vs. recurring gaps (a personal learning roadmap), plus token usage and estimated Gemini cost.
+- **Skill Coach (RAG)** — turns the analyzer's skill gaps into a grounded upskilling plan. Each gap is embedded and matched against a curated skill knowledge base stored in **pgvector** (cosine KNN); the retrieved cards are fed to Gemini, which writes advice drawn *only* from them and cites the source card — so the guidance is auditable, not hallucinated.
 - **Usage tracking / quota** — the backend logs every run to an append-only table and enforces a daily per-user limit (`DAILY_ANALYSIS_LIMIT`, default 20, resets midnight UTC).
 
 ## Setup
@@ -22,7 +23,7 @@
 ### 1. Supabase (once)
 
 1. Create a project at https://supabase.com.
-2. Open **SQL Editor → New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it.
+2. Open **SQL Editor → New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This also enables the `vector` extension and creates the pgvector skill knowledge base + the `match_skill_kb` KNN function.
 3. Grab the **Project URL**, **anon public key**, and **service_role key** from *Project Settings → API*.
 
 ### 2. Backend (Python 3.10+)
@@ -42,6 +43,14 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
 DAILY_ANALYSIS_LIMIT=20
+```
+
+Ingest the skill knowledge base into pgvector (once, and after editing
+[`app/data/skill_kb.json`](backend/app/data/skill_kb.json)) — embeds each card
+with Gemini `gemini-embedding-001` (768-dim) and upserts it into the `skill_kb` table:
+
+```powershell
+python -m scripts.ingest_kb
 ```
 
 Start the API:
@@ -103,8 +112,9 @@ What's covered:
 - **Golden-set regression** ([`tests/test_golden_regression.py`](backend/tests/test_golden_regression.py)) — replays recorded Gemini responses for real resume + job-description pairs through the live `run_analysis` pipeline and asserts the structured contract and per-case expectations still hold.
 - **Gemini service** ([`tests/test_gemini_service.py`](backend/tests/test_gemini_service.py)) — the network boundary is mocked; verifies the Pydantic schema is wired in as `response_schema`, the parsed/raw-JSON paths, and token accounting.
 - **API pipeline** ([`tests/test_analyze_endpoint.py`](backend/tests/test_analyze_endpoint.py), [`tests/test_analyze_authenticated.py`](backend/tests/test_analyze_authenticated.py)) — FastAPI `TestClient` exercises validation, error mapping (500/502/429/401), quota enforcement, and the signed-in persistence path.
+- **RAG / vector search** ([`tests/test_embedding_service.py`](backend/tests/test_embedding_service.py), [`tests/test_retrieval_service.py`](backend/tests/test_retrieval_service.py), [`tests/test_skill_coach.py`](backend/tests/test_skill_coach.py)) — embeddings, the pgvector RPC payload, gap de-duplication, the citation guard (advice citing an unretrieved card is dropped), and the honest ungrounded fallback — all with Gemini and Postgres mocked.
 
-Current coverage: **94%** across `app/` and `main.py`.
+Current coverage: **96%** across `app/` and `main.py`.
 
 ### Evaluating model quality
 
@@ -156,3 +166,14 @@ rate-limit errors, so it stays comfortably within the Gemini **free tier** —
 ```
 
 Returns `{ "matching_skills": [...], "skill_gaps": [...], "generated_draft": "...", "analysis_id": "...", "usage": { "used_today": 3, "daily_limit": 20 }, "prompt_tokens": 1234, "output_tokens": 567 }` (persistence fields are `null` for guests). Responds `429` when the daily quota is exhausted.
+
+`POST /api/skill-coach` — retrieval-augmented upskilling guidance for a set of skill gaps (typically the `skill_gaps` from an `/analyze` run).
+
+```json
+{
+  "skill_gaps": ["Kubernetes", "Terraform", "gRPC"],
+  "language": "en | de"
+}
+```
+
+Each gap is embedded and matched against the pgvector knowledge base; the retrieved cards ground a Gemini call that returns `{ "summary": "...", "items": [{ "gap": "...", "guidance": "...", "source_slug": "..." }], "sources": [{ "slug": "...", "name": "...", "similarity": 0.82, ... }], "grounded": true }`. When the knowledge base is not configured, it responds with `grounded: false` and an empty plan rather than inventing advice.

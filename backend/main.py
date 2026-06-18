@@ -13,10 +13,18 @@ load_dotenv()  # must run before the Gemini service reads GEMINI_API_KEY
 from fastapi import FastAPI, File, Header, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.schemas import AnalyzeRequest, AnalyzeResult, ExtractResponse, UsageInfo
+from app.schemas import (
+    AnalyzeRequest,
+    AnalyzeResult,
+    ExtractResponse,
+    SkillCoachRequest,
+    SkillCoachResponse,
+    UsageInfo,
+)
 from app.services import supabase_service
 from app.services.extract_service import extract_text
 from app.services.gemini_service import run_analysis
+from app.services.rag_service import coach_skill_gaps
 
 logger = logging.getLogger("align")
 
@@ -131,3 +139,21 @@ async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(No
         prompt_tokens=prompt_tokens,
         output_tokens=output_tokens,
     )
+
+
+@app.post("/skill-coach", response_model=SkillCoachResponse)
+async def skill_coach(payload: SkillCoachRequest) -> SkillCoachResponse:
+    """Retrieval-augmented coaching: ground upskilling advice for the given
+    skill gaps in the pgvector knowledge base.
+
+    Embeds each gap, runs a cosine KNN search over the curated skill cards,
+    and asks Gemini to synthesize a plan strictly from the retrieved context
+    (with citations). Degrades to an honest, ungrounded response when the
+    knowledge base is not configured rather than hallucinating advice.
+    """
+    try:
+        return await coach_skill_gaps(payload.skill_gaps, payload.language)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Skill coaching failed: {exc}") from exc
