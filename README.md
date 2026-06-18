@@ -106,6 +106,31 @@ What's covered:
 
 Current coverage: **94%** across `app/` and `main.py`.
 
+### Evaluating model quality
+
+The pytest suite mocks Gemini, so it checks the *pipeline*, not the *model*. To
+measure how well the live model actually performs, run the evaluation harness
+([`eval/run.py`](backend/eval/run.py)) over a labelled dataset of ~15 resume +
+job-description pairs ([`eval/dataset.json`](backend/eval/dataset.json)):
+
+```powershell
+cd backend
+python -m eval.run            # all cases
+python -m eval.run --limit 5  # quick sample
+```
+
+It calls the real Gemini API and reports:
+
+- **Schema-validity rate** — share of runs that parsed into the contract.
+- **Structural-compliance rate** — share obeying the contract (top-3 matches with evidence, 3–5 gaps, in-range score).
+- **Skill-gap hit-rate** — of the gaps each resume is *known* to be missing, how many the model surfaced (extraction quality).
+- **Score-in-band rate** and **average match score** as calibration sanity checks.
+
+It runs cases sequentially with a delay (`--delay`, default 5s) and retries on
+rate-limit errors, so it stays comfortably within the Gemini **free tier** —
+~15 calls per full run. The scoring logic itself is unit-tested offline in
+[`tests/test_eval_harness.py`](backend/tests/test_eval_harness.py).
+
 ## Usage
 
 1. Sign in (or **Continue as guest** — fully functional, nothing saved).

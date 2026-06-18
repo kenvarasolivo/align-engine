@@ -1,0 +1,156 @@
+[
+  {
+    "id": "backend-python-strong",
+    "request": {
+      "resume_text": "Backend engineer, 4 years. Built FastAPI microservices in Python, designed PostgreSQL schemas, set up GitHub Actions CI, packaged services with Docker.",
+      "job_description_text": "Backend Engineer: strong Python, REST APIs, PostgreSQL, Docker. Kubernetes orchestration and Terraform IaC required.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["Kubernetes", "Terraform"],
+    "score_band": [60, 95]
+  },
+  {
+    "id": "frontend-to-backend-weak",
+    "request": {
+      "resume_text": "Frontend developer. React, TypeScript, CSS, design systems, accessibility. Light Node.js scripting for build tooling.",
+      "job_description_text": "Senior Backend Engineer: deep Python, distributed systems, Kafka message queues, PostgreSQL at scale.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["Python", "Kafka"],
+    "score_band": [0, 55]
+  },
+  {
+    "id": "data-scientist-to-mle-de",
+    "request": {
+      "resume_text": "Data Scientist, 3 Jahre. Python, pandas, scikit-learn, Aufbau von ML-Modellen, SQL, Datenvisualisierung mit Matplotlib.",
+      "job_description_text": "Machine Learning Engineer: Python, Modell-Deployment (MLOps), Docker, Cloud auf GCP, CI/CD-Pipelines.",
+      "mode": "anschreiben",
+      "language": "de"
+    },
+    "expected_gaps": ["MLOps", "Docker"],
+    "score_band": [40, 80]
+  },
+  {
+    "id": "devops-strong",
+    "request": {
+      "resume_text": "DevOps engineer. AWS, Terraform, Kubernetes, Helm, GitHub Actions, Prometheus and Grafana monitoring, Bash and Python automation.",
+      "job_description_text": "Platform Engineer: Kubernetes, Terraform, AWS, observability with Prometheus, CI/CD. Go programming experience a plus.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["Go"],
+    "score_band": [60, 95]
+  },
+  {
+    "id": "junior-grad-stretch",
+    "request": {
+      "resume_text": "CS graduate. Coursework in algorithms, Java, and databases. Two semester projects: a JavaFX desktop app and a small REST API in Spring Boot.",
+      "job_description_text": "Senior Java Engineer: 5+ years, Spring Boot at scale, Kafka, AWS, leading a small team.",
+      "mode": "anschreiben",
+      "language": "en"
+    },
+    "expected_gaps": ["Kafka", "AWS"],
+    "score_band": [20, 60]
+  },
+  {
+    "id": "mobile-ios-strong-de",
+    "request": {
+      "resume_text": "iOS-Entwickler, 5 Jahre. Swift, SwiftUI, UIKit, Core Data, Unit-Tests mit XCTest, App-Store-Releases.",
+      "job_description_text": "iOS Engineer: Swift, SwiftUI, Erfahrung mit CI/CD (Fastlane) und automatisierten UI-Tests. Kenntnisse in Combine erwünscht.",
+      "mode": "email",
+      "language": "de"
+    },
+    "expected_gaps": ["Fastlane", "Combine"],
+    "score_band": [50, 90]
+  },
+  {
+    "id": "fullstack-balanced",
+    "request": {
+      "resume_text": "Full-stack developer. React frontend, Node.js/Express backend, MongoDB, REST APIs, deployed on Heroku.",
+      "job_description_text": "Full-stack Engineer: React, Node.js, PostgreSQL, GraphQL, AWS deployment, Docker.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["GraphQL", "Docker"],
+    "score_band": [40, 80]
+  },
+  {
+    "id": "data-engineer-strong",
+    "request": {
+      "resume_text": "Data Engineer. Built ETL pipelines with Apache Airflow, Spark for batch processing, Snowflake warehouse, dbt transformations, SQL and Python.",
+      "job_description_text": "Data Engineer: Airflow, Spark, dbt, SQL, Python. Real-time streaming with Apache Flink is a strong plus.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["Flink"],
+    "score_band": [60, 95]
+  },
+  {
+    "id": "pm-to-engineer-mismatch",
+    "request": {
+      "resume_text": "Product Manager, 6 years. Roadmapping, stakeholder management, A/B testing, SQL for analytics, Jira, agile ceremonies.",
+      "job_description_text": "Software Engineer: Python, system design, data structures and algorithms, building production services.",
+      "mode": "anschreiben",
+      "language": "en"
+    },
+    "expected_gaps": ["Python", "System design"],
+    "score_band": [0, 45]
+  },
+  {
+    "id": "ml-researcher-de",
+    "request": {
+      "resume_text": "ML Researcher. PyTorch, Transformer-Architekturen, Publikationen auf NeurIPS, Python, Experiment-Tracking mit Weights & Biases.",
+      "job_description_text": "Senior ML Engineer: PyTorch, Modelle in Produktion bringen, Kubernetes, Model Serving (Triton), Monitoring.",
+      "mode": "email",
+      "language": "de"
+    },
+    "expected_gaps": ["Kubernetes", "Triton"],
+    "score_band": [40, 80]
+  },
+  {
+    "id": "qa-to-sdet",
+    "request": {
+      "resume_text": "QA engineer. Manual testing, test plans, Selenium UI automation, basic SQL, bug tracking in Jira.",
+      "job_description_text": "SDET: Selenium, strong programming in Java, API testing with REST Assured, CI integration, performance testing with JMeter.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["Java", "JMeter"],
+    "score_band": [30, 70]
+  },
+  {
+    "id": "cloud-architect-strong",
+    "request": {
+      "resume_text": "Cloud architect. Designed multi-region AWS architectures, IaC with Terraform, Kubernetes (EKS), cost optimization, security and IAM, well-architected reviews.",
+      "job_description_text": "Cloud Architect: AWS, Terraform, Kubernetes, security best practices. Azure experience desirable.",
+      "mode": "anschreiben",
+      "language": "en"
+    },
+    "expected_gaps": ["Azure"],
+    "score_band": [60, 95]
+  },
+  {
+    "id": "embedded-mismatch-de",
+    "request": {
+      "resume_text": "Embedded-Entwickler. C, C++, Mikrocontroller, RTOS, Hardware-nahe Programmierung, Schaltungsdesign.",
+      "job_description_text": "Frontend-Entwickler: React, TypeScript, moderne CSS, Web-Performance, REST-Integration.",
+      "mode": "email",
+      "language": "de"
+    },
+    "expected_gaps": ["React", "TypeScript"],
+    "score_band": [0, 40]
+  },
+  {
+    "id": "security-engineer-strong",
+    "request": {
+      "resume_text": "Security engineer. Penetration testing, OWASP Top 10, Burp Suite, Python tooling, threat modeling, SIEM with Splunk.",
+      "job_description_text": "Application Security Engineer: OWASP, pentesting, secure code review, Python. Container security (Kubernetes hardening) a plus.",
+      "mode": "email",
+      "language": "en"
+    },
+    "expected_gaps": ["Kubernetes"],
+    "score_band": [55, 90]
+  }
+]
