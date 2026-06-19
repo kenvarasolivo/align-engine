@@ -164,7 +164,12 @@ async def skill_coach(payload: SkillCoachRequest) -> SkillCoachResponse:
     knowledge base is not configured rather than hallucinating advice.
     """
     try:
-        return await coach_skill_gaps(payload.skill_gaps, payload.language)
+        return await coach_skill_gaps(
+            payload.skill_gaps,
+            payload.language,
+            payload.resume_text,
+            payload.job_description_text,
+        )
     except RuntimeError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
     except Exception as exc:

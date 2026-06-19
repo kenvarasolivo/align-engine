@@ -4,6 +4,8 @@ import type { Language, RetrievedSkill, SkillCoachResult } from "../types";
 interface SkillCoachProps {
   gaps: string[];
   language: Language;
+  resumeText: string;
+  jobDescriptionText: string;
 }
 
 const STRINGS: Record<
@@ -53,7 +55,7 @@ const STRINGS: Record<
 
 type Status = "idle" | "loading" | "done" | "error";
 
-export default function SkillCoach({ gaps, language }: SkillCoachProps) {
+export default function SkillCoach({ gaps, language, resumeText, jobDescriptionText }: SkillCoachProps) {
   const t = STRINGS[language];
   const [status, setStatus] = useState<Status>("idle");
   const [data, setData] = useState<SkillCoachResult | null>(null);
@@ -81,7 +83,12 @@ export default function SkillCoach({ gaps, language }: SkillCoachProps) {
       const response = await fetch("/api/skill-coach", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skill_gaps: gaps, language }),
+        body: JSON.stringify({
+          skill_gaps: gaps,
+          language,
+          resume_text: resumeText || undefined,
+          job_description_text: jobDescriptionText || undefined,
+        }),
       });
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -152,20 +159,28 @@ export default function SkillCoach({ gaps, language }: SkillCoachProps) {
               </div>
               <ul className="mt-3 space-y-2.5">
                 {data.items.map((item, i) => {
-                  const source = sourcesBySlug.get(item.source_slug);
+                  const itemSources = item.source_slugs
+                    .map((slug) => sourcesBySlug.get(slug))
+                    .filter((s): s is RetrievedSkill => Boolean(s));
                   return (
-                    <li key={`${item.source_slug}-${i}`} className="rounded-lg border border-hairline bg-white px-3.5 py-2.5 shadow-xs">
+                    <li key={`${item.source_slugs.join("-")}-${i}`} className="rounded-lg border border-hairline bg-white px-3.5 py-2.5 shadow-xs">
                       <div className="text-sm font-semibold text-obsidian">{item.gap}</div>
                       <p className="mt-1 text-xs leading-relaxed text-charcoal/75">{item.guidance}</p>
-                      {source && (
-                        <div className="mt-2 flex items-center gap-1.5 text-2xs text-charcoal/50">
-                          <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
-                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-                          </svg>
-                          <span className="font-medium text-charcoal/60">{t.sourceLabel}:</span>
-                          <span>{source.name}</span>
-                          <span className="tabular-nums text-cobalt/70">{Math.round(source.similarity * 100)}%</span>
+                      {itemSources.length > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-charcoal/50">
+                          <span className="inline-flex items-center gap-1.5 font-medium text-charcoal/60">
+                            <svg className="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+                              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+                            </svg>
+                            {t.sourceLabel}:
+                          </span>
+                          {itemSources.map((source) => (
+                            <span key={source.slug} className="inline-flex items-center gap-1">
+                              <span>{source.name}</span>
+                              <span className="tabular-nums text-cobalt/70">{Math.round(source.similarity * 100)}%</span>
+                            </span>
+                          ))}
                         </div>
                       )}
                     </li>

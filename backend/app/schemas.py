@@ -125,22 +125,35 @@ class SkillCoachRequest(BaseModel):
         description="The skill gaps to coach on — typically the skill_gaps from a prior /analyze run.",
     )
     language: Language = Field("en", description="Strict output locale: 'en' or 'de'.")
+    resume_text: Optional[str] = Field(
+        None,
+        description="The candidate's resume, so guidance can be tailored to their actual background.",
+    )
+    job_description_text: Optional[str] = Field(
+        None,
+        description="The target job description, so guidance is framed toward this specific role.",
+    )
 
 
 class SkillPlanItem(BaseModel):
-    """One grounded recommendation, citing the KB card it draws from."""
+    """One grounded recommendation, citing the KB card(s) it draws from."""
 
     gap: str = Field(..., description="The skill gap this item addresses.")
     guidance: str = Field(
         ...,
         description=(
             "Two to three sentences of concrete, actionable advice for closing the gap, "
-            "grounded ONLY in the provided knowledge-base context."
+            "tailored to the candidate's resume and the target role, but grounded ONLY in "
+            "the provided knowledge-base context (never invent tools or facts absent from it)."
         ),
     )
-    source_slug: str = Field(
+    source_slugs: List[str] = Field(
         ...,
-        description="The slug of the knowledge-base card this guidance is grounded in.",
+        min_length=1,
+        description=(
+            "The slug(s) of the knowledge-base card(s) this guidance is grounded in. May cite "
+            "more than one card when the advice synthesizes across several retrieved cards."
+        ),
     )
 
 

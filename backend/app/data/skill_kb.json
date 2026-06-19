@@ -174,5 +174,61 @@
     "summary": "Defending web applications against the common classes of attack: injection, broken auth, secrets handling, least-privilege access, and the OWASP Top 10.",
     "how_to_close": "Parameterize every query, never log or commit secrets, scope credentials to least privilege, and validate all input at the boundary. Skim the OWASP Top 10 and be able to name how your app mitigates each.",
     "keywords": ["security", "owasp", "authentication", "authorization", "sql injection", "secrets", "least privilege", "vulnerabilities"]
+  },
+  {
+    "slug": "structured-thinking",
+    "name": "Structured thinking & problem decomposition",
+    "category": "Ways of working",
+    "summary": "A disciplined, methodical approach to ambiguous problems: breaking a large goal into smaller well-defined parts, reasoning from first principles, stating assumptions explicitly, and working in a logical, repeatable sequence rather than ad hoc.",
+    "how_to_close": "Practise decomposing a real task into a written plan before coding: define the goal, list sub-problems, name assumptions and edge cases, then tackle them in order. Use frameworks like issue trees or pre/post-conditions, and keep a short design note for non-trivial work so your reasoning is auditable. In interviews, narrate the structure ('first I'll handle X, then Y') instead of jumping to a solution.",
+    "keywords": ["structured mindset", "analytical thinking", "problem solving", "decomposition", "first principles", "logical", "methodical", "critical thinking", "organized"]
+  },
+  {
+    "slug": "curiosity-learning",
+    "name": "Curiosity & continuous learning",
+    "category": "Ways of working",
+    "summary": "An active drive to understand how and why things work and to keep acquiring new skills as technology shifts. Employers value learning agility — the ability to pick up unfamiliar tools and domains quickly — over knowing any single stack today.",
+    "how_to_close": "Make your curiosity visible and concrete: keep a learning log or 'today I learned' notes, ship small experiments with tools outside your comfort zone, and write short summaries of what you explored and why. Follow a few primary sources (docs, papers, changelogs) rather than only tutorials, and be ready to talk about something you taught yourself recently and how you went about it.",
+    "keywords": ["curiosity", "continuous learning", "learning agility", "self-taught", "growth mindset", "eager to learn", "inquisitive", "exploration"]
+  },
+  {
+    "slug": "innovation-mindset",
+    "name": "Innovation & creative problem solving",
+    "category": "Ways of working",
+    "summary": "The motivation to improve the status quo: spotting friction, proposing novel approaches, prototyping ideas quickly, and being willing to challenge how things are currently done while staying grounded in real user or business value.",
+    "how_to_close": "Build the habit of turning an annoyance into a prototype: identify a concrete pain point, sketch two or three possible approaches, and ship a rough proof-of-concept to test the idea cheaply. Frame innovation around impact ('this saved X time / unlocked Y'), not novelty for its own sake, and keep a small portfolio of side projects that show initiative beyond assigned work.",
+    "keywords": ["innovation", "motivation for innovation", "creativity", "creative problem solving", "prototyping", "initiative", "improvement", "novel ideas", "experimentation"]
+  },
+  {
+    "slug": "communication",
+    "name": "Communication & stakeholder skills",
+    "category": "Ways of working",
+    "summary": "Conveying technical ideas clearly to different audiences in writing and speech: concise documentation, well-scoped questions, status updates, and explaining trade-offs to non-technical stakeholders so the right decisions get made.",
+    "how_to_close": "Practise writing tight design docs, PR descriptions, and READMEs that lead with the 'why' and the decision, not just the 'what'. Tailor depth to the audience, summarize before you dive into detail, and in discussions restate the problem to confirm shared understanding. Recording yourself explaining a project for two minutes is a fast way to find filler and tighten your delivery.",
+    "keywords": ["communication", "written communication", "verbal communication", "stakeholder management", "documentation", "presentation", "articulate", "interpersonal"]
+  },
+  {
+    "slug": "collaboration-teamwork",
+    "name": "Collaboration & teamwork",
+    "category": "Ways of working",
+    "summary": "Working effectively inside a team: giving and receiving code review and feedback constructively, sharing context, supporting teammates, and operating well within agile rituals like stand-ups, sprint planning, and retrospectives.",
+    "how_to_close": "Contribute to a shared codebase (an open-source project or a group project) where you review others' work and respond to reviews of your own. Practise giving specific, kind, actionable feedback, keep teammates unblocked by sharing context early, and be able to describe your role in a real team project — including a disagreement you resolved well.",
+    "keywords": ["teamwork", "collaboration", "cross-functional", "agile", "scrum", "code review", "feedback", "pair programming", "team player"]
+  },
+  {
+    "slug": "ownership-initiative",
+    "name": "Ownership & initiative",
+    "category": "Ways of working",
+    "summary": "Taking end-to-end responsibility for outcomes rather than tasks: driving work without being told every step, following through on details, surfacing risks early, and treating a problem as yours until it is genuinely resolved.",
+    "how_to_close": "Look for the unowned gap on a project and take it: propose the fix, see it through to production, and follow up on the result. Demonstrate ownership in your story by describing something you drove from idea to shipped outcome — including how you handled a setback — rather than work that was handed to you fully specified.",
+    "keywords": ["ownership", "initiative", "proactive", "self-starter", "accountability", "autonomy", "self-directed", "drive", "responsibility"]
+  },
+  {
+    "slug": "adaptability",
+    "name": "Adaptability & handling ambiguity",
+    "category": "Ways of working",
+    "summary": "Staying effective when requirements shift, information is incomplete, or priorities change: making reasonable progress under uncertainty, adjusting quickly to new tools or contexts, and remaining calm and pragmatic when plans change.",
+    "how_to_close": "Deliberately work on under-specified tasks: make and document a reasonable assumption, ship a small slice, then adjust as you learn rather than waiting for perfect clarity. Build comfort switching contexts (a new language or domain) and be ready to describe a time priorities changed mid-project and how you re-planned without losing momentum.",
+    "keywords": ["adaptability", "flexibility", "handling ambiguity", "uncertainty", "resilience", "agile", "fast-paced", "change", "pragmatic"]
   }
 ]

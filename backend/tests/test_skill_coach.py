@@ -52,8 +52,8 @@ async def test_coach_grounds_plan_and_exposes_sources():
     plan = SkillCoachPlan(
         summary="Focus on infra.",
         items=[
-            SkillPlanItem(gap="Kubernetes", guidance="Deploy a small app.", source_slug="kubernetes"),
-            SkillPlanItem(gap="Terraform", guidance="Write IaC.", source_slug="terraform"),
+            SkillPlanItem(gap="Kubernetes", guidance="Deploy a small app.", source_slugs=["kubernetes"]),
+            SkillPlanItem(gap="Terraform", guidance="Write IaC.", source_slugs=["terraform"]),
         ],
     )
     client = _fake_gen_client(parsed=plan)
@@ -68,21 +68,67 @@ async def test_coach_grounds_plan_and_exposes_sources():
 
 
 @pytest.mark.asyncio
-async def test_coach_drops_items_citing_unretrieved_cards():
-    """The citation guard must reject a source_slug that was never retrieved."""
+async def test_coach_synthesizes_across_multiple_cards():
+    """An item may cite several retrieved cards; all valid slugs are kept."""
     plan = SkillCoachPlan(
-        summary="...",
+        summary="Combine infra skills.",
         items=[
-            SkillPlanItem(gap="Kubernetes", guidance="ok", source_slug="kubernetes"),
-            SkillPlanItem(gap="GraphQL", guidance="hallucinated", source_slug="graphql"),
+            SkillPlanItem(
+                gap="Platform engineering",
+                guidance="Provision with Terraform, then run it on Kubernetes.",
+                source_slugs=["terraform", "kubernetes"],
+            ),
         ],
     )
     client = _fake_gen_client(parsed=plan)
     with patch.object(rag_service, "retrieve_for_gaps", AsyncMock(return_value=_cards())), \
          patch.object(rag_service, "_get_client", return_value=client):
-        out = await rag_service.coach_skill_gaps(["Kubernetes", "GraphQL"])
+        out = await rag_service.coach_skill_gaps(["Platform engineering"])
 
-    assert [i.source_slug for i in out.items] == ["kubernetes"]
+    assert out.items[0].source_slugs == ["terraform", "kubernetes"]
+
+
+@pytest.mark.asyncio
+async def test_coach_passes_resume_and_job_into_prompt():
+    """Resume + job text are spliced into the prompt for tailoring."""
+    plan = SkillCoachPlan(
+        summary="x",
+        items=[SkillPlanItem(gap="Kubernetes", guidance="g", source_slugs=["kubernetes"])],
+    )
+    client = _fake_gen_client(parsed=plan)
+    with patch.object(rag_service, "retrieve_for_gaps", AsyncMock(return_value=_cards())), \
+         patch.object(rag_service, "_get_client", return_value=client):
+        await rag_service.coach_skill_gaps(
+            ["Kubernetes"],
+            "en",
+            resume_text="Built a FastAPI service",
+            job_description_text="Seeking a platform engineer",
+        )
+
+    prompt = client.aio.models.generate_content.call_args.kwargs["contents"]
+    assert "Built a FastAPI service" in prompt
+    assert "Seeking a platform engineer" in prompt
+
+
+@pytest.mark.asyncio
+async def test_coach_drops_items_citing_unretrieved_cards():
+    """The citation guard must reject a source_slug that was never retrieved."""
+    plan = SkillCoachPlan(
+        summary="...",
+        items=[
+            SkillPlanItem(gap="Kubernetes", guidance="ok", source_slugs=["kubernetes"]),
+            SkillPlanItem(gap="GraphQL", guidance="hallucinated", source_slugs=["graphql"]),
+            # Mixed: one real slug + one hallucinated — the bad slug is stripped,
+            # the item survives on its valid citation.
+            SkillPlanItem(gap="Mixed", guidance="part real", source_slugs=["terraform", "graphql"]),
+        ],
+    )
+    client = _fake_gen_client(parsed=plan)
+    with patch.object(rag_service, "retrieve_for_gaps", AsyncMock(return_value=_cards())), \
+         patch.object(rag_service, "_get_client", return_value=client):
+        out = await rag_service.coach_skill_gaps(["Kubernetes", "GraphQL", "Mixed"])
+
+    assert [i.source_slugs for i in out.items] == [["kubernetes"], ["terraform"]]
 
 
 @pytest.mark.asyncio
@@ -102,7 +148,7 @@ async def test_coach_falls_back_to_ungrounded_without_retrieval():
 async def test_coach_validates_raw_json_when_not_pre_parsed():
     plan = SkillCoachPlan(
         summary="from text",
-        items=[SkillPlanItem(gap="Kubernetes", guidance="g", source_slug="kubernetes")],
+        items=[SkillPlanItem(gap="Kubernetes", guidance="g", source_slugs=["kubernetes"])],
     )
     client = _fake_gen_client(parsed=None, text=plan.model_dump_json())
     with patch.object(rag_service, "retrieve_for_gaps", AsyncMock(return_value=_cards())), \
@@ -122,7 +168,7 @@ def client():
 def test_skill_coach_endpoint_returns_plan(client):
     response = SkillCoachResponse(
         summary="Focus on infra.",
-        items=[SkillPlanItem(gap="Kubernetes", guidance="Deploy.", source_slug="kubernetes")],
+        items=[SkillPlanItem(gap="Kubernetes", guidance="Deploy.", source_slugs=["kubernetes"])],
         sources=[],
         grounded=True,
     )
@@ -131,7 +177,7 @@ def test_skill_coach_endpoint_returns_plan(client):
     assert resp.status_code == 200
     body = resp.json()
     assert body["grounded"] is True
-    assert body["items"][0]["source_slug"] == "kubernetes"
+    assert body["items"][0]["source_slugs"] == ["kubernetes"]
 
 
 def test_skill_coach_endpoint_rejects_empty_gaps(client):

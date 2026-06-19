@@ -319,6 +319,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             isLoading={isLoading}
+            resumeText={resumeText}
+            jobDescriptionText={jobDescriptionText}
           />
         </main>
       ) : (

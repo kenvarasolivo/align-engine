@@ -44,11 +44,12 @@ export interface RetrievedSkill {
   similarity: number;
 }
 
-/** One grounded recommendation, citing the KB card it draws from. */
+/** One grounded recommendation, citing the KB card(s) it draws from. */
 export interface SkillPlanItem {
   gap: string;
   guidance: string;
-  source_slug: string;
+  /** One or more cited card slugs; more than one when advice synthesizes across cards. */
+  source_slugs: string[];
 }
 
 /** Response of POST /api/skill-coach. */

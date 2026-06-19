@@ -20,9 +20,14 @@ from app.services.retrieval_service import retrieve_for_gaps
 _SYSTEM_INSTRUCTION = (
     "You are ALIGN's skill coach. You help a candidate close the gaps between their "
     "resume and a target role. You are given a set of retrieved knowledge-base cards as "
-    "CONTEXT. Ground every recommendation strictly in that context: never invent tools, "
-    "certifications, or facts that are not present in the provided cards. Each item must "
-    "cite the slug of the card it draws from. Be specific, concrete, and encouraging."
+    "CONTEXT, and (when available) the candidate's resume and the target job description. "
+    "Ground every concrete recommendation — tools, actions, practices — strictly in the "
+    "retrieved cards: never invent tools, certifications, or facts that are not present in "
+    "them. Use the resume and job description ONLY to TAILOR the advice: reference the "
+    "candidate's actual experience, connect each gap to what this specific role needs, and "
+    "suggest how they could demonstrate the skill using projects they already have. When a "
+    "gap is best addressed by more than one card, synthesize across them in a single item "
+    "and cite every card slug you drew from. Be specific, concrete, and encouraging."
 )
 
 _LANGUAGE_RULES = {
@@ -79,21 +84,64 @@ def _ungrounded(gaps: list[str]) -> SkillCoachResponse:
     )
 
 
-async def coach_skill_gaps(gaps: list[str], language: str = "en") -> SkillCoachResponse:
-    """Retrieve grounding cards for `gaps` and generate a grounded plan."""
+# Cap how much resume/job text we splice into the prompt. Enough to ground the
+# tailoring in the candidate's real background without blowing the free-tier
+# token budget on boilerplate.
+_CONTEXT_CHARS = 2000
+
+
+def _clip(text: str | None) -> str:
+    if not text or not text.strip():
+        return ""
+    text = text.strip()
+    return text if len(text) <= _CONTEXT_CHARS else text[:_CONTEXT_CHARS] + " …[truncated]"
+
+
+def _candidate_context(resume_text: str | None, job_description_text: str | None) -> str:
+    """Optional resume/job block used only to tailor (not ground) the advice."""
+    parts = []
+    resume = _clip(resume_text)
+    job = _clip(job_description_text)
+    if resume:
+        parts.append(f"=== CANDIDATE RESUME (for tailoring only) ===\n{resume}")
+    if job:
+        parts.append(f"=== TARGET JOB DESCRIPTION (for tailoring only) ===\n{job}")
+    return "\n\n".join(parts)
+
+
+async def coach_skill_gaps(
+    gaps: list[str],
+    language: str = "en",
+    resume_text: str | None = None,
+    job_description_text: str | None = None,
+) -> SkillCoachResponse:
+    """Retrieve grounding cards for `gaps` and generate a grounded, tailored plan."""
     cards = await retrieve_for_gaps(gaps)
     if not cards:
         return _ungrounded(gaps)
 
     client = _get_client()
+    candidate_context = _candidate_context(resume_text, job_description_text)
+    tailoring = (
+        "Tailor each recommendation to the candidate's actual background and the target "
+        "role using the resume and job description below — name the projects or experience "
+        "they could build on. Still ground every concrete tool or action ONLY in the "
+        "retrieved cards.\n\n"
+        if candidate_context
+        else ""
+    )
     prompt = (
         "Produce a grounded upskilling plan. Address each skill gap below using ONLY the "
-        "retrieved context cards. If no card is relevant to a gap, omit that gap rather "
-        "than inventing advice. Cite the card slug for every item.\n\n"
+        "retrieved context cards for the concrete advice. If a gap is best served by several "
+        "cards, combine them into one item and cite every slug used. If no card is relevant "
+        "to a gap, omit that gap rather than inventing advice.\n\n"
+        f"{tailoring}"
         f"{_LANGUAGE_RULES.get(language, _LANGUAGE_RULES['en'])}\n\n"
         f"=== SKILL GAPS ===\n{json.dumps(gaps, ensure_ascii=False)}\n\n"
         f"=== RETRIEVED CONTEXT CARDS ===\n{_format_context(cards)}"
     )
+    if candidate_context:
+        prompt += f"\n\n{candidate_context}"
 
     response = await client.aio.models.generate_content(
         model=GEN_MODEL_ID,
@@ -111,10 +159,16 @@ async def coach_skill_gaps(gaps: list[str], language: str = "en") -> SkillCoachR
     else:
         plan = SkillCoachPlan.model_validate_json(response.text)
 
-    # Defend the citation contract: drop any item the model grounded in a slug
-    # that was not actually retrieved, so `source_slug` is always real.
+    # Defend the citation contract: keep only the slugs that were actually
+    # retrieved, and drop any item left with no real citation — so every
+    # `source_slugs` entry maps to a card we can show the user.
     valid_slugs = {c["slug"] for c in cards}
-    items: list[SkillPlanItem] = [i for i in plan.items if i.source_slug in valid_slugs]
+    items: list[SkillPlanItem] = []
+    for item in plan.items:
+        grounded_slugs = [s for s in item.source_slugs if s in valid_slugs]
+        if grounded_slugs:
+            item.source_slugs = grounded_slugs
+            items.append(item)
 
     return SkillCoachResponse(
         summary=plan.summary,

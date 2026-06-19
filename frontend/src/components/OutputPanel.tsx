@@ -9,6 +9,8 @@ interface OutputPanelProps {
   activeTab: OutputTab;
   onTabChange: (tab: OutputTab) => void;
   isLoading: boolean;
+  resumeText: string;
+  jobDescriptionText: string;
 }
 
 const STRINGS: Record<
@@ -144,6 +146,8 @@ export default function OutputPanel({
   activeTab,
   onTabChange,
   isLoading,
+  resumeText,
+  jobDescriptionText,
 }: OutputPanelProps) {
   const t = STRINGS[language];
 
@@ -252,7 +256,12 @@ export default function OutputPanel({
 
               {/* Skill Coach — RAG-grounded learning plan for the gaps above */}
               {result.skill_gaps.length > 0 && (
-                <SkillCoach gaps={result.skill_gaps} language={language} />
+                <SkillCoach
+                  gaps={result.skill_gaps}
+                  language={language}
+                  resumeText={resumeText}
+                  jobDescriptionText={jobDescriptionText}
+                />
               )}
             </div>
           ) : (

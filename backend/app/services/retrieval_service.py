@@ -16,12 +16,19 @@ from app.services.embedding_service import embed_query, to_pgvector
 
 _TIMEOUT = httpx.Timeout(15.0)
 
+# Floor on cosine similarity for a card to count as a real match. Set above the
+# old 0.3 because gemini-embedding cosine scores run high: weakly-related cards
+# still land around 0.55-0.65, so a higher floor drops stretched matches (e.g. a
+# technical card surfacing for a soft-skill gap) and lets the coach honestly say
+# it has no grounding rather than padding the plan. Tuned against the curated KB.
+_MIN_SIMILARITY = 0.55
+
 
 async def search_skills(
     query: str,
     *,
     match_count: int = 4,
-    min_similarity: float = 0.3,
+    min_similarity: float = _MIN_SIMILARITY,
 ) -> list[dict[str, Any]]:
     """Return the knowledge-base cards most semantically similar to `query`.
 
