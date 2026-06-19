@@ -31,6 +31,35 @@ export interface AnalysisResult {
   output_tokens?: number | null;
 }
 
+// ---- Skill Coach (RAG over pgvector) ----
+
+/** A knowledge-base card retrieved from pgvector to ground the coach. */
+export interface RetrievedSkill {
+  slug: string;
+  name: string;
+  category?: string | null;
+  summary: string;
+  how_to_close: string;
+  /** Cosine similarity to the queried gap, 0–1 (higher = closer). */
+  similarity: number;
+}
+
+/** One grounded recommendation, citing the KB card it draws from. */
+export interface SkillPlanItem {
+  gap: string;
+  guidance: string;
+  source_slug: string;
+}
+
+/** Response of POST /api/skill-coach. */
+export interface SkillCoachResult {
+  summary: string;
+  items: SkillPlanItem[];
+  sources: RetrievedSkill[];
+  /** False when retrieval was unavailable and guidance fell back to empty. */
+  grounded: boolean;
+}
+
 // ---- Database rows (match supabase/schema.sql) ----
 
 export interface ResumeRow {

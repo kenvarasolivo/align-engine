@@ -1,4 +1,5 @@
 import type { AnalysisResult, Language, OutputTab } from "../types";
+import SkillCoach from "./SkillCoach";
 
 interface OutputPanelProps {
   language: Language;
@@ -248,6 +249,11 @@ export default function OutputPanel({
                   ))}
                 </ul>
               </div>
+
+              {/* Skill Coach — RAG-grounded learning plan for the gaps above */}
+              {result.skill_gaps.length > 0 && (
+                <SkillCoach gaps={result.skill_gaps} language={language} />
+              )}
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center px-8 text-center animate-fade-in">
