@@ -17,6 +17,7 @@ const STRINGS: Record<
     grounded: string;
     sourceLabel: string;
     unavailable: string;
+    noPlan: string;
     errorPrefix: string;
   }
 > = {
@@ -30,6 +31,8 @@ const STRINGS: Record<
     sourceLabel: "Source",
     unavailable:
       "The knowledge base isn’t available right now, so no grounded plan could be generated.",
+    noPlan:
+      "Couldn’t ground a plan for these specific gaps from the knowledge base. Try Regenerate.",
     errorPrefix: "Couldn’t generate a plan",
   },
   de: {
@@ -42,6 +45,8 @@ const STRINGS: Record<
     sourceLabel: "Quelle",
     unavailable:
       "Die Wissensdatenbank ist derzeit nicht verfügbar, daher konnte kein fundierter Plan erstellt werden.",
+    noPlan:
+      "Für diese spezifischen Lücken konnte aus der Wissensdatenbank kein Plan abgeleitet werden. Bitte erneut generieren.",
     errorPrefix: "Plan konnte nicht erstellt werden",
   },
 };
@@ -132,8 +137,10 @@ export default function SkillCoach({ gaps, language }: SkillCoachProps) {
 
       {status === "done" && data && (
         <div className="mt-3 animate-fade-in-up">
-          {!data.grounded || data.items.length === 0 ? (
+          {!data.grounded ? (
             <p className="text-xs leading-relaxed text-charcoal/70">{t.unavailable}</p>
+          ) : data.items.length === 0 ? (
+            <p className="text-xs leading-relaxed text-charcoal/70">{t.noPlan}</p>
           ) : (
             <>
               <p className="text-xs font-medium leading-relaxed text-charcoal/80">{data.summary}</p>
