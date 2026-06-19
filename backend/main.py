@@ -5,6 +5,7 @@ Run from the backend/ directory:
 """
 
 import logging
+import os
 
 from dotenv import load_dotenv
 
@@ -48,7 +49,18 @@ app.add_middleware(
 
 @app.get("/health")
 async def health() -> dict:
-    return {"status": "ok", "engine": "ALIGN"}
+    # Report whether the backend can see its runtime config (booleans only — no
+    # secrets). `supabase` being False is exactly what silently disables Skill
+    # Coach (and history/quota): retrieval short-circuits to an ungrounded plan
+    # when the SUPABASE_* env vars are missing in the deployment environment.
+    return {
+        "status": "ok",
+        "engine": "ALIGN",
+        "config": {
+            "gemini": bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")),
+            "supabase": supabase_service.is_configured(),
+        },
+    }
 
 
 @app.post("/extract", response_model=ExtractResponse)

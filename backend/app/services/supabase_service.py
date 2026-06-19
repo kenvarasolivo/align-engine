@@ -16,7 +16,15 @@ _TIMEOUT = httpx.Timeout(10.0)
 
 
 def _supabase_url() -> Optional[str]:
-    url = os.environ.get("SUPABASE_URL") or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    # Accept the framework-prefixed names too (VITE_ for our Vite frontend,
+    # NEXT_PUBLIC_ for Next): on Vercel the URL/anon key are often set only under
+    # the frontend-prefixed name, and the backend reading the bare name would
+    # otherwise see no config and silently disable Supabase-backed features.
+    url = (
+        os.environ.get("SUPABASE_URL")
+        or os.environ.get("VITE_SUPABASE_URL")
+        or os.environ.get("NEXT_PUBLIC_SUPABASE_URL")
+    )
     return url.rstrip("/") if url else None
 
 
@@ -25,7 +33,11 @@ def _service_key() -> Optional[str]:
 
 
 def _anon_key() -> Optional[str]:
-    return os.environ.get("SUPABASE_ANON_KEY") or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    return (
+        os.environ.get("SUPABASE_ANON_KEY")
+        or os.environ.get("VITE_SUPABASE_ANON_KEY")
+        or os.environ.get("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+    )
 
 
 def is_configured() -> bool:
