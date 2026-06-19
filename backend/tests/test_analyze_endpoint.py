@@ -34,7 +34,12 @@ def _payload(**overrides):
 def test_health(client):
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok", "engine": "ALIGN"}
+    body = resp.json()
+    assert body["status"] == "ok"
+    assert body["engine"] == "ALIGN"
+    # Config booleans surface whether the backend can see its runtime config.
+    assert set(body["config"]) == {"gemini", "supabase"}
+    assert all(isinstance(v, bool) for v in body["config"].values())
 
 
 def test_analyze_returns_schema_valid_json(client):
