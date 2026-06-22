@@ -33,6 +33,13 @@ export interface AnalysisResult {
 
 // ---- Skill Coach (RAG over pgvector) ----
 
+/** A real, curated learning resource attached to a KB card (never LLM-generated). */
+export interface SkillResource {
+  title: string;
+  url: string;
+  type?: string | null;
+}
+
 /** A knowledge-base card retrieved from pgvector to ground the coach. */
 export interface RetrievedSkill {
   slug: string;
@@ -42,6 +49,8 @@ export interface RetrievedSkill {
   how_to_close: string;
   /** Cosine similarity to the queried gap, 0–1 (higher = closer). */
   similarity: number;
+  /** Curated, real resources surfaced verbatim from retrieval. */
+  resources?: SkillResource[];
 }
 
 /** One grounded recommendation, citing the KB card(s) it draws from. */

@@ -129,10 +129,16 @@ create table if not exists public.skill_kb (
   summary text not null,
   how_to_close text not null,
   keywords text[] not null default '{}',
+  -- Curated real learning resources ([{title, url, type}, ...]). Surfaced
+  -- verbatim by the coach so the links are never LLM-generated.
+  resources jsonb not null default '[]'::jsonb,
   -- Must match EMBED_DIM in backend/app/services/embedding_service.py.
   embedding vector(768),
   updated_at timestamptz not null default now()
 );
+
+-- Additive column for existing deployments (curated resource links).
+alter table public.skill_kb add column if not exists resources jsonb not null default '[]'::jsonb;
 
 -- Approximate nearest-neighbour index for cosine distance. HNSW gives
 -- fast, high-recall search; the KB is small so this is instant either way,
@@ -152,7 +158,11 @@ create policy "skill_kb read" on public.skill_kb
 -- KNN search RPC: returns the cards closest to a query embedding, with a
 -- cosine similarity score in [0,1] (1 = identical). Called over PostgREST
 -- as /rest/v1/rpc/match_skill_kb by app/services/retrieval_service.py.
-create or replace function public.match_skill_kb(
+--
+-- Dropped first: adding `resources` to the RETURNS TABLE changes the function's
+-- result type, which CREATE OR REPLACE cannot do in place.
+drop function if exists public.match_skill_kb(vector(768), int, float);
+create function public.match_skill_kb(
   query_embedding vector(768),
   match_count int default 4,
   min_similarity float default 0.0
@@ -164,6 +174,7 @@ returns table (
   summary text,
   how_to_close text,
   keywords text[],
+  resources jsonb,
   similarity float
 )
 language sql stable
@@ -175,6 +186,7 @@ as $$
     kb.summary,
     kb.how_to_close,
     kb.keywords,
+    kb.resources,
     1 - (kb.embedding <=> query_embedding) as similarity
   from public.skill_kb kb
   where kb.embedding is not null

@@ -12,7 +12,13 @@ import json
 
 from google.genai import types
 
-from app.schemas import RetrievedSkill, SkillCoachPlan, SkillCoachResponse, SkillPlanItem
+from app.schemas import (
+    RetrievedSkill,
+    SkillCoachPlan,
+    SkillCoachResponse,
+    SkillPlanItem,
+    SkillResource,
+)
 from app.services.gemini_service import MODEL_ID as GEN_MODEL_ID
 from app.services.gemini_service import _get_client
 from app.services.retrieval_service import retrieve_for_gaps
@@ -39,16 +45,33 @@ _LANGUAGE_RULES = {
 }
 
 
+def _card_resources(card: dict) -> list[dict]:
+    """The well-formed resource dicts on a card (title + url required)."""
+    return [
+        r
+        for r in (card.get("resources") or [])
+        if isinstance(r, dict) and r.get("title") and r.get("url")
+    ]
+
+
 def _format_context(cards: list[dict]) -> str:
     blocks = []
     for c in cards:
         kws = ", ".join(c.get("keywords", []) or [])
-        blocks.append(
+        block = (
             f"[slug: {c['slug']}] {c['name']} ({c.get('category', 'General')})\n"
             f"Summary: {c['summary']}\n"
             f"How to close: {c['how_to_close']}\n"
             f"Keywords: {kws}"
         )
+        # Expose resource *titles* so guidance can name a real resource (e.g.
+        # "work through the official Kubernetes tutorial"). The clickable URL is
+        # attached deterministically from the card — the model never emits it —
+        # so links can't be hallucinated.
+        titles = ", ".join(r["title"] for r in _card_resources(c))
+        if titles:
+            block += f"\nResources (refer to by name; do NOT invent URLs): {titles}"
+        blocks.append(block)
     return "\n\n".join(blocks)
 
 
@@ -61,6 +84,10 @@ def _to_sources(cards: list[dict]) -> list[RetrievedSkill]:
             summary=c["summary"],
             how_to_close=c["how_to_close"],
             similarity=round(float(c.get("similarity", 0.0)), 4),
+            resources=[
+                SkillResource(title=r["title"], url=r["url"], type=r.get("type"))
+                for r in _card_resources(c)
+            ],
         )
         for c in cards
     ]

@@ -83,6 +83,7 @@ async def main_async(batch: int) -> None:
                 "summary": card["summary"],
                 "how_to_close": card["how_to_close"],
                 "keywords": card.get("keywords", []),
+                "resources": card.get("resources", []),
                 "embedding": to_pgvector(vector),
             }
             for card, vector in zip(chunk, vectors)

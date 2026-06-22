@@ -25,6 +25,11 @@ def _cards():
             "summary": "Container orchestration.",
             "how_to_close": "Stand up a kind cluster.",
             "keywords": ["k8s"],
+            "resources": [
+                {"title": "Kubernetes Docs", "url": "https://kubernetes.io/docs/tutorials/", "type": "docs"},
+                # Malformed entries must be dropped, not surfaced.
+                {"title": "no url"},
+            ],
             "similarity": 0.82,
         },
         {
@@ -65,6 +70,26 @@ async def test_coach_grounds_plan_and_exposes_sources():
     assert len(out.items) == 2
     assert {s.slug for s in out.sources} == {"kubernetes", "terraform"}
     assert all(0.0 <= s.similarity <= 1.0 for s in out.sources)
+
+
+@pytest.mark.asyncio
+async def test_coach_surfaces_real_resources_verbatim():
+    """Curated resource links ride along on sources; malformed ones are dropped."""
+    plan = SkillCoachPlan(
+        summary="Focus on infra.",
+        items=[SkillPlanItem(gap="Kubernetes", guidance="Deploy.", source_slugs=["kubernetes"])],
+    )
+    client = _fake_gen_client(parsed=plan)
+    with patch.object(rag_service, "retrieve_for_gaps", AsyncMock(return_value=_cards())), \
+         patch.object(rag_service, "_get_client", return_value=client):
+        out = await rag_service.coach_skill_gaps(["Kubernetes"])
+
+    k8s = next(s for s in out.sources if s.slug == "kubernetes")
+    assert [r.url for r in k8s.resources] == ["https://kubernetes.io/docs/tutorials/"]
+    assert k8s.resources[0].title == "Kubernetes Docs"
+    # The card's resource title is exposed to the model as grounding context.
+    prompt = client.aio.models.generate_content.call_args.kwargs["contents"]
+    assert "Kubernetes Docs" in prompt
 
 
 @pytest.mark.asyncio

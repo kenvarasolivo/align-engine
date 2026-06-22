@@ -5,7 +5,12 @@
     "category": "Infrastructure",
     "summary": "Container orchestration platform for deploying, scaling, and operating containerized workloads across a cluster, with self-healing, rolling updates, and declarative configuration.",
     "how_to_close": "Stand up a local cluster with kind or minikube, deploy a small service with a Deployment + Service + Ingress, then practice rolling updates, liveness/readiness probes, and resource limits. Be able to read a failing pod's events and logs.",
-    "keywords": ["k8s", "containers", "orchestration", "helm", "pods", "deployments", "eks", "gke"]
+    "keywords": ["k8s", "containers", "orchestration", "helm", "pods", "deployments", "eks", "gke"],
+    "resources": [
+      { "title": "Kubernetes Documentation — Tutorials", "url": "https://kubernetes.io/docs/tutorials/", "type": "docs" },
+      { "title": "Kubernetes the Hard Way (Kelsey Hightower)", "url": "https://github.com/kelseyhightower/kubernetes-the-hard-way", "type": "course" },
+      { "title": "Play with Kubernetes (free browser cluster)", "url": "https://labs.play-with-k8s.com/", "type": "tool" }
+    ]
   },
   {
     "slug": "docker",
@@ -13,7 +18,12 @@
     "category": "Infrastructure",
     "summary": "Packaging an application and its dependencies into portable images that run identically across environments, the foundation for reproducible builds and most modern deployment pipelines.",
     "how_to_close": "Write a multi-stage Dockerfile for one of your own projects, minimize image size, use a non-root user, and add a .dockerignore. Practice docker compose for a multi-service local stack.",
-    "keywords": ["containers", "dockerfile", "image", "compose", "oci", "build"]
+    "keywords": ["containers", "dockerfile", "image", "compose", "oci", "build"],
+    "resources": [
+      { "title": "Docker Docs — Get Started", "url": "https://docs.docker.com/get-started/", "type": "docs" },
+      { "title": "Dockerfile best practices", "url": "https://docs.docker.com/build/building/best-practices/", "type": "docs" },
+      { "title": "Play with Docker (free browser lab)", "url": "https://labs.play-with-docker.com/", "type": "tool" }
+    ]
   },
   {
     "slug": "terraform",
@@ -21,7 +31,11 @@
     "category": "Infrastructure",
     "summary": "Declarative provisioning of cloud infrastructure from version-controlled configuration, enabling reproducible environments, plan/apply review, and drift detection.",
     "how_to_close": "Provision a real resource (e.g. a storage bucket or a managed database) end to end, use variables and outputs, store state remotely, and run terraform plan in review before apply. Understand idempotency and the resource graph.",
-    "keywords": ["iac", "infrastructure as code", "provisioning", "hcl", "cloud", "pulumi"]
+    "keywords": ["iac", "infrastructure as code", "provisioning", "hcl", "cloud", "pulumi"],
+    "resources": [
+      { "title": "HashiCorp — Terraform Tutorials", "url": "https://developer.hashicorp.com/terraform/tutorials", "type": "course" },
+      { "title": "Terraform Documentation", "url": "https://developer.hashicorp.com/terraform/docs", "type": "docs" }
+    ]
   },
   {
     "slug": "ci-cd",
@@ -29,7 +43,11 @@
     "category": "DevOps",
     "summary": "Automated build, test, and deploy pipelines that gate every change on a passing test suite and ship to production with minimal manual steps.",
     "how_to_close": "Add a GitHub Actions workflow that runs your tests and a coverage gate on every push, then a deploy job on the main branch. Learn caching, matrix builds, and required status checks.",
-    "keywords": ["continuous integration", "continuous delivery", "github actions", "gitlab ci", "jenkins", "pipeline", "automation"]
+    "keywords": ["continuous integration", "continuous delivery", "github actions", "gitlab ci", "jenkins", "pipeline", "automation"],
+    "resources": [
+      { "title": "GitHub Actions Documentation", "url": "https://docs.github.com/en/actions", "type": "docs" },
+      { "title": "GitLab CI/CD Documentation", "url": "https://docs.gitlab.com/ee/ci/", "type": "docs" }
+    ]
   },
   {
     "slug": "aws",
@@ -37,7 +55,12 @@
     "category": "Cloud",
     "summary": "Market-leading cloud platform; core building blocks are compute (EC2/Lambda), storage (S3), networking (VPC), databases (RDS), and IAM for access control.",
     "how_to_close": "Deploy a small app using a managed service (Lambda + API Gateway or ECS Fargate), put state in S3 or RDS, and lock it down with least-privilege IAM roles. Read a bill and understand cost drivers.",
-    "keywords": ["amazon web services", "ec2", "s3", "lambda", "rds", "iam", "cloud"]
+    "keywords": ["amazon web services", "ec2", "s3", "lambda", "rds", "iam", "cloud"],
+    "resources": [
+      { "title": "AWS Skill Builder (free training)", "url": "https://skillbuilder.aws/", "type": "course" },
+      { "title": "AWS Documentation", "url": "https://docs.aws.amazon.com/", "type": "docs" },
+      { "title": "AWS Free Tier (hands-on account)", "url": "https://aws.amazon.com/free/", "type": "tool" }
+    ]
   },
   {
     "slug": "gcp",
@@ -45,7 +68,11 @@
     "category": "Cloud",
     "summary": "Google's cloud platform; common services include Cloud Run (serverless containers), Cloud SQL, BigQuery, Pub/Sub, and Vertex AI for managed ML.",
     "how_to_close": "Containerize a service and deploy it to Cloud Run, connect a Cloud SQL instance, and wire up a service account with scoped permissions. Vertex AI is the natural bridge if your work is ML-flavoured.",
-    "keywords": ["google cloud", "cloud run", "bigquery", "pub/sub", "vertex ai", "gke", "cloud sql"]
+    "keywords": ["google cloud", "cloud run", "bigquery", "pub/sub", "vertex ai", "gke", "cloud sql"],
+    "resources": [
+      { "title": "Google Cloud — Cloud Run Quickstarts", "url": "https://cloud.google.com/run/docs/quickstarts", "type": "docs" },
+      { "title": "Google Cloud Skills Boost", "url": "https://www.cloudskillsboost.google/", "type": "course" }
+    ]
   },
   {
     "slug": "postgresql",
@@ -53,7 +80,11 @@
     "category": "Databases",
     "summary": "Powerful open-source relational database with strong SQL support, transactions, JSON columns, full-text search, and a rich extension ecosystem (PostGIS, pgvector).",
     "how_to_close": "Model a real schema with foreign keys and indexes, write joins and window functions by hand, then use EXPLAIN ANALYZE to diagnose a slow query. Understand transactions, isolation levels, and connection pooling.",
-    "keywords": ["postgres", "sql", "relational database", "rdbms", "indexes", "transactions", "query optimization"]
+    "keywords": ["postgres", "sql", "relational database", "rdbms", "indexes", "transactions", "query optimization"],
+    "resources": [
+      { "title": "PostgreSQL Official Documentation", "url": "https://www.postgresql.org/docs/", "type": "docs" },
+      { "title": "Use The Index, Luke! — SQL indexing & tuning", "url": "https://use-the-index-luke.com/", "type": "article" }
+    ]
   },
   {
     "slug": "pgvector-rag",
@@ -61,7 +92,12 @@
     "category": "AI Engineering",
     "summary": "Retrieval-augmented generation grounds an LLM in retrieved documents: text is embedded into vectors, stored in a vector index (pgvector, Pinecone, Weaviate), and the nearest neighbours to a query are injected into the prompt so answers cite real sources instead of hallucinating.",
     "how_to_close": "Build an ingest job that chunks and embeds documents, store them in pgvector with an HNSW or IVFFlat index, and retrieve top-k by cosine similarity at query time. Learn task-typed embeddings, chunking strategy, and how to evaluate retrieval quality (recall@k).",
-    "keywords": ["rag", "embeddings", "vector database", "pinecone", "weaviate", "semantic search", "cosine similarity", "hnsw", "retrieval"]
+    "keywords": ["rag", "embeddings", "vector database", "pinecone", "weaviate", "semantic search", "cosine similarity", "hnsw", "retrieval"],
+    "resources": [
+      { "title": "pgvector (official repository & docs)", "url": "https://github.com/pgvector/pgvector", "type": "docs" },
+      { "title": "Supabase — AI & Vector Embeddings guide", "url": "https://supabase.com/docs/guides/ai", "type": "docs" },
+      { "title": "Google Gemini — Embeddings documentation", "url": "https://ai.google.dev/gemini-api/docs/embeddings", "type": "docs" }
+    ]
   },
   {
     "slug": "llm-prompt-engineering",
@@ -69,7 +105,12 @@
     "category": "AI Engineering",
     "summary": "Building reliable features on top of large language models: structured outputs, system instructions, function/tool calling, evaluation harnesses, and guarding against hallucination and prompt injection.",
     "how_to_close": "Ship a feature that forces structured (JSON-schema) output, add an offline eval set with measurable metrics, and handle failure modes (rate limits, malformed output, refusals). Treat prompts as versioned, tested artifacts.",
-    "keywords": ["llm", "prompt engineering", "structured outputs", "function calling", "gemini", "openai", "evaluation", "guardrails"]
+    "keywords": ["llm", "prompt engineering", "structured outputs", "function calling", "gemini", "openai", "evaluation", "guardrails"],
+    "resources": [
+      { "title": "Prompt Engineering Guide", "url": "https://www.promptingguide.ai/", "type": "article" },
+      { "title": "Gemini API — Structured output", "url": "https://ai.google.dev/gemini-api/docs/structured-output", "type": "docs" },
+      { "title": "Gemini API — Prompting strategies", "url": "https://ai.google.dev/gemini-api/docs/prompting-strategies", "type": "docs" }
+    ]
   },
   {
     "slug": "mlops",
@@ -77,7 +118,12 @@
     "category": "AI Engineering",
     "summary": "Operationalizing machine learning: experiment tracking, model versioning, reproducible training pipelines, deployment, and monitoring for data and model drift in production.",
     "how_to_close": "Track experiments and version a model and its data, package it behind an API, and add monitoring for input drift and output quality. Tools like MLflow, DVC, and a feature store are common talking points.",
-    "keywords": ["machine learning operations", "model deployment", "mlflow", "model monitoring", "drift", "feature store", "model registry"]
+    "keywords": ["machine learning operations", "model deployment", "mlflow", "model monitoring", "drift", "feature store", "model registry"],
+    "resources": [
+      { "title": "Made With ML — MLOps Course (free)", "url": "https://madewithml.com/", "type": "course" },
+      { "title": "MLflow Documentation", "url": "https://mlflow.org/docs/latest/index.html", "type": "docs" },
+      { "title": "Google — MLOps: Continuous delivery & automation pipelines", "url": "https://cloud.google.com/architecture/mlops-continuous-delivery-and-automation-pipelines-in-machine-learning", "type": "article" }
+    ]
   },
   {
     "slug": "pytorch",
@@ -85,7 +131,11 @@
     "category": "Machine Learning",
     "summary": "The dominant research and production deep-learning framework: tensors, autograd, custom nn.Module models, training loops, and GPU acceleration.",
     "how_to_close": "Implement a training loop from scratch (forward, loss, backward, step), fine-tune a pretrained model on a small dataset, and learn how batching, learning-rate schedules, and checkpoints work. Be able to read a model's parameter count and memory use.",
-    "keywords": ["deep learning", "neural networks", "tensors", "autograd", "fine-tuning", "training", "gpu", "transformers"]
+    "keywords": ["deep learning", "neural networks", "tensors", "autograd", "fine-tuning", "training", "gpu", "transformers"],
+    "resources": [
+      { "title": "PyTorch — Deep Learning: A 60 Minute Blitz", "url": "https://pytorch.org/tutorials/beginner/deep_learning_60min_blitz.html", "type": "docs" },
+      { "title": "fast.ai — Practical Deep Learning for Coders (free)", "url": "https://course.fast.ai/", "type": "course" }
+    ]
   },
   {
     "slug": "rest-api-design",
@@ -93,7 +143,12 @@
     "category": "Backend",
     "summary": "Designing clean HTTP APIs: resource modelling, correct status codes, pagination, idempotency, versioning, authentication, and clear error contracts.",
     "how_to_close": "Design an API with consistent resource naming, proper status codes, and a documented error shape. Add pagination and an auth scheme, and generate an OpenAPI spec (FastAPI does this for free).",
-    "keywords": ["rest", "http", "api", "openapi", "endpoints", "status codes", "fastapi"]
+    "keywords": ["rest", "http", "api", "openapi", "endpoints", "status codes", "fastapi"],
+    "resources": [
+      { "title": "FastAPI Documentation", "url": "https://fastapi.tiangolo.com/", "type": "docs" },
+      { "title": "Microsoft REST API Guidelines", "url": "https://github.com/microsoft/api-guidelines", "type": "article" },
+      { "title": "OpenAPI Specification", "url": "https://swagger.io/specification/", "type": "docs" }
+    ]
   },
   {
     "slug": "graphql",
@@ -101,7 +156,11 @@
     "category": "Backend",
     "summary": "A query language and runtime that lets clients request exactly the data they need from a typed schema, reducing over-fetching at the cost of more server-side complexity.",
     "how_to_close": "Define a schema with types, queries, and mutations, then implement resolvers over an existing data source. Learn the N+1 problem and how DataLoader-style batching solves it.",
-    "keywords": ["graphql", "schema", "resolvers", "apollo", "query language", "n+1"]
+    "keywords": ["graphql", "schema", "resolvers", "apollo", "query language", "n+1"],
+    "resources": [
+      { "title": "GraphQL — Learn", "url": "https://graphql.org/learn/", "type": "docs" },
+      { "title": "Apollo Odyssey — GraphQL tutorials", "url": "https://www.apollographql.com/tutorials/", "type": "course" }
+    ]
   },
   {
     "slug": "grpc",
@@ -109,7 +168,11 @@
     "category": "Backend",
     "summary": "A high-performance RPC framework using Protocol Buffers for compact, strongly-typed, contract-first service-to-service communication, common in microservice backends.",
     "how_to_close": "Define a .proto service, generate client and server stubs, and implement a unary and a streaming method. Understand how protobuf schema evolution stays backward-compatible.",
-    "keywords": ["grpc", "protobuf", "protocol buffers", "rpc", "microservices", "streaming"]
+    "keywords": ["grpc", "protobuf", "protocol buffers", "rpc", "microservices", "streaming"],
+    "resources": [
+      { "title": "gRPC Documentation", "url": "https://grpc.io/docs/", "type": "docs" },
+      { "title": "Protocol Buffers Documentation", "url": "https://protobuf.dev/", "type": "docs" }
+    ]
   },
   {
     "slug": "redis",
@@ -117,7 +180,11 @@
     "category": "Backend",
     "summary": "In-memory data store used for caching, rate limiting, sessions, queues, and pub/sub, with rich data structures and configurable persistence.",
     "how_to_close": "Add a read-through cache in front of an expensive query, implement a rate limiter with an expiring key, and understand eviction policies and the cache-invalidation pitfalls. Try Redis Streams for a lightweight queue.",
-    "keywords": ["redis", "cache", "caching", "in-memory", "rate limiting", "pub/sub", "key-value"]
+    "keywords": ["redis", "cache", "caching", "in-memory", "rate limiting", "pub/sub", "key-value"],
+    "resources": [
+      { "title": "Redis Documentation", "url": "https://redis.io/docs/latest/", "type": "docs" },
+      { "title": "Redis Learn — tutorials & courses", "url": "https://redis.io/learn/", "type": "course" }
+    ]
   },
   {
     "slug": "kafka",
@@ -125,7 +192,11 @@
     "category": "Distributed Systems",
     "summary": "A distributed event-streaming platform for high-throughput, durable, ordered message logs that decouple producers from consumers and enable event-driven architectures.",
     "how_to_close": "Produce and consume from a topic, reason about partitions, consumer groups, and offsets, and understand delivery guarantees (at-least-once vs exactly-once). Contrast it with a simple queue like SQS or RabbitMQ.",
-    "keywords": ["kafka", "event streaming", "message queue", "pub/sub", "partitions", "consumer groups", "event-driven"]
+    "keywords": ["kafka", "event streaming", "message queue", "pub/sub", "partitions", "consumer groups", "event-driven"],
+    "resources": [
+      { "title": "Apache Kafka Documentation", "url": "https://kafka.apache.org/documentation/", "type": "docs" },
+      { "title": "Confluent Developer — Kafka courses (free)", "url": "https://developer.confluent.io/", "type": "course" }
+    ]
   },
   {
     "slug": "microservices",
@@ -133,7 +204,11 @@
     "category": "Architecture",
     "summary": "Decomposing a system into independently deployable services that own their data and communicate over the network, trading operational complexity for team and scaling autonomy.",
     "how_to_close": "Be able to argue when NOT to use microservices (most early projects). Understand service boundaries, inter-service communication, distributed tracing, and the failure modes (network partitions, cascading failures) a monolith avoids.",
-    "keywords": ["microservices", "distributed systems", "service mesh", "bounded context", "service boundaries", "monolith"]
+    "keywords": ["microservices", "distributed systems", "service mesh", "bounded context", "service boundaries", "monolith"],
+    "resources": [
+      { "title": "microservices.io — patterns (Chris Richardson)", "url": "https://microservices.io/", "type": "article" },
+      { "title": "Martin Fowler — Microservices", "url": "https://martinfowler.com/articles/microservices.html", "type": "article" }
+    ]
   },
   {
     "slug": "system-design",
@@ -141,7 +216,11 @@
     "category": "Architecture",
     "summary": "Designing systems that meet capacity, latency, and availability targets: load balancing, caching layers, data partitioning, replication, and reasoning about trade-offs under CAP.",
     "how_to_close": "Practice sizing a system from requirements: estimate QPS and storage, pick a data model, add caching and a queue where they help, and name the bottleneck. Read a few well-known architecture write-ups and the CAP/PACELC trade-offs.",
-    "keywords": ["system design", "scalability", "load balancing", "sharding", "replication", "cap theorem", "high availability", "throughput"]
+    "keywords": ["system design", "scalability", "load balancing", "sharding", "replication", "cap theorem", "high availability", "throughput"],
+    "resources": [
+      { "title": "The System Design Primer (GitHub)", "url": "https://github.com/donnemartin/system-design-primer", "type": "article" },
+      { "title": "ByteByteGo — system design newsletter", "url": "https://blog.bytebytego.com/", "type": "article" }
+    ]
   },
   {
     "slug": "observability",
@@ -149,7 +228,12 @@
     "category": "DevOps",
     "summary": "Understanding a running system through metrics, structured logs, and distributed traces, with alerting on the signals that actually predict user-facing pain (SLOs).",
     "how_to_close": "Add structured logging and a few key metrics (latency, error rate, throughput) to a service, then define an SLO and an alert. Learn the difference between logs, metrics, and traces and when each helps.",
-    "keywords": ["observability", "monitoring", "metrics", "logging", "tracing", "prometheus", "grafana", "opentelemetry", "slo", "alerting"]
+    "keywords": ["observability", "monitoring", "metrics", "logging", "tracing", "prometheus", "grafana", "opentelemetry", "slo", "alerting"],
+    "resources": [
+      { "title": "Google — Site Reliability Engineering (free book)", "url": "https://sre.google/sre-book/table-of-contents/", "type": "book" },
+      { "title": "OpenTelemetry Documentation", "url": "https://opentelemetry.io/docs/", "type": "docs" },
+      { "title": "Prometheus Documentation", "url": "https://prometheus.io/docs/introduction/overview/", "type": "docs" }
+    ]
   },
   {
     "slug": "async-python",
@@ -157,7 +241,11 @@
     "category": "Backend",
     "summary": "Using async/await and the asyncio event loop to handle many concurrent I/O-bound operations efficiently, the model behind FastAPI and modern Python network code.",
     "how_to_close": "Convert a batch of sequential HTTP or DB calls into concurrent ones with asyncio.gather, understand when async helps (I/O-bound) versus when it doesn't (CPU-bound), and avoid blocking the event loop. Know how httpx/async DB drivers fit in.",
-    "keywords": ["asyncio", "async await", "concurrency", "event loop", "fastapi", "non-blocking", "coroutines"]
+    "keywords": ["asyncio", "async await", "concurrency", "event loop", "fastapi", "non-blocking", "coroutines"],
+    "resources": [
+      { "title": "Python — asyncio documentation", "url": "https://docs.python.org/3/library/asyncio.html", "type": "docs" },
+      { "title": "Real Python — Async IO in Python", "url": "https://realpython.com/async-io-python/", "type": "article" }
+    ]
   },
   {
     "slug": "testing-pytest",
@@ -165,7 +253,11 @@
     "category": "Quality",
     "summary": "Building confidence with a fast, deterministic test suite: unit tests, fixtures, mocking external boundaries (APIs, databases), coverage gates, and regression tests for hard-to-reproduce bugs.",
     "how_to_close": "Mock external boundaries so tests run offline and free, use fixtures to share setup, add a coverage gate in CI, and write a regression test the next time you fix a bug. Learn parametrization and golden-set testing for non-deterministic outputs.",
-    "keywords": ["testing", "pytest", "unit tests", "mocking", "fixtures", "coverage", "tdd", "regression tests"]
+    "keywords": ["testing", "pytest", "unit tests", "mocking", "fixtures", "coverage", "tdd", "regression tests"],
+    "resources": [
+      { "title": "pytest Documentation", "url": "https://docs.pytest.org/", "type": "docs" },
+      { "title": "Real Python — Effective Testing with Pytest", "url": "https://realpython.com/pytest-python-testing/", "type": "article" }
+    ]
   },
   {
     "slug": "security-fundamentals",
@@ -173,7 +265,12 @@
     "category": "Security",
     "summary": "Defending web applications against the common classes of attack: injection, broken auth, secrets handling, least-privilege access, and the OWASP Top 10.",
     "how_to_close": "Parameterize every query, never log or commit secrets, scope credentials to least privilege, and validate all input at the boundary. Skim the OWASP Top 10 and be able to name how your app mitigates each.",
-    "keywords": ["security", "owasp", "authentication", "authorization", "sql injection", "secrets", "least privilege", "vulnerabilities"]
+    "keywords": ["security", "owasp", "authentication", "authorization", "sql injection", "secrets", "least privilege", "vulnerabilities"],
+    "resources": [
+      { "title": "OWASP Top 10", "url": "https://owasp.org/www-project-top-ten/", "type": "article" },
+      { "title": "OWASP Cheat Sheet Series", "url": "https://cheatsheetseries.owasp.org/", "type": "docs" },
+      { "title": "PortSwigger — Web Security Academy (free labs)", "url": "https://portswigger.net/web-security", "type": "course" }
+    ]
   },
   {
     "slug": "structured-thinking",
@@ -181,7 +278,11 @@
     "category": "Ways of working",
     "summary": "A disciplined, methodical approach to ambiguous problems: breaking a large goal into smaller well-defined parts, reasoning from first principles, stating assumptions explicitly, and working in a logical, repeatable sequence rather than ad hoc.",
     "how_to_close": "Practise decomposing a real task into a written plan before coding: define the goal, list sub-problems, name assumptions and edge cases, then tackle them in order. Use frameworks like issue trees or pre/post-conditions, and keep a short design note for non-trivial work so your reasoning is auditable. In interviews, narrate the structure ('first I'll handle X, then Y') instead of jumping to a solution.",
-    "keywords": ["structured mindset", "analytical thinking", "problem solving", "decomposition", "first principles", "logical", "methodical", "critical thinking", "organized"]
+    "keywords": ["structured mindset", "analytical thinking", "problem solving", "decomposition", "first principles", "logical", "methodical", "critical thinking", "organized"],
+    "resources": [
+      { "title": "How to Solve It — G. Pólya (overview)", "url": "https://en.wikipedia.org/wiki/How_to_Solve_It", "type": "book" },
+      { "title": "Thinking in Systems — Donella Meadows (overview)", "url": "https://en.wikipedia.org/wiki/Thinking_in_Systems", "type": "book" }
+    ]
   },
   {
     "slug": "curiosity-learning",
@@ -189,7 +290,11 @@
     "category": "Ways of working",
     "summary": "An active drive to understand how and why things work and to keep acquiring new skills as technology shifts. Employers value learning agility — the ability to pick up unfamiliar tools and domains quickly — over knowing any single stack today.",
     "how_to_close": "Make your curiosity visible and concrete: keep a learning log or 'today I learned' notes, ship small experiments with tools outside your comfort zone, and write short summaries of what you explored and why. Follow a few primary sources (docs, papers, changelogs) rather than only tutorials, and be ready to talk about something you taught yourself recently and how you went about it.",
-    "keywords": ["curiosity", "continuous learning", "learning agility", "self-taught", "growth mindset", "eager to learn", "inquisitive", "exploration"]
+    "keywords": ["curiosity", "continuous learning", "learning agility", "self-taught", "growth mindset", "eager to learn", "inquisitive", "exploration"],
+    "resources": [
+      { "title": "Learning How to Learn (Coursera, free to audit)", "url": "https://www.coursera.org/learn/learning-how-to-learn", "type": "course" },
+      { "title": "Make It Stick: The Science of Successful Learning (overview)", "url": "https://en.wikipedia.org/wiki/Make_It_Stick", "type": "book" }
+    ]
   },
   {
     "slug": "innovation-mindset",
@@ -197,7 +302,11 @@
     "category": "Ways of working",
     "summary": "The motivation to improve the status quo: spotting friction, proposing novel approaches, prototyping ideas quickly, and being willing to challenge how things are currently done while staying grounded in real user or business value.",
     "how_to_close": "Build the habit of turning an annoyance into a prototype: identify a concrete pain point, sketch two or three possible approaches, and ship a rough proof-of-concept to test the idea cheaply. Frame innovation around impact ('this saved X time / unlocked Y'), not novelty for its own sake, and keep a small portfolio of side projects that show initiative beyond assigned work.",
-    "keywords": ["innovation", "motivation for innovation", "creativity", "creative problem solving", "prototyping", "initiative", "improvement", "novel ideas", "experimentation"]
+    "keywords": ["innovation", "motivation for innovation", "creativity", "creative problem solving", "prototyping", "initiative", "improvement", "novel ideas", "experimentation"],
+    "resources": [
+      { "title": "IDEO — Design Thinking", "url": "https://designthinking.ideo.com/", "type": "article" },
+      { "title": "The Lean Startup — Eric Ries (overview)", "url": "https://en.wikipedia.org/wiki/The_Lean_Startup", "type": "book" }
+    ]
   },
   {
     "slug": "communication",
@@ -205,7 +314,11 @@
     "category": "Ways of working",
     "summary": "Conveying technical ideas clearly to different audiences in writing and speech: concise documentation, well-scoped questions, status updates, and explaining trade-offs to non-technical stakeholders so the right decisions get made.",
     "how_to_close": "Practise writing tight design docs, PR descriptions, and READMEs that lead with the 'why' and the decision, not just the 'what'. Tailor depth to the audience, summarize before you dive into detail, and in discussions restate the problem to confirm shared understanding. Recording yourself explaining a project for two minutes is a fast way to find filler and tighten your delivery.",
-    "keywords": ["communication", "written communication", "verbal communication", "stakeholder management", "documentation", "presentation", "articulate", "interpersonal"]
+    "keywords": ["communication", "written communication", "verbal communication", "stakeholder management", "documentation", "presentation", "articulate", "interpersonal"],
+    "resources": [
+      { "title": "Google — Technical Writing Courses (free)", "url": "https://developers.google.com/tech-writing", "type": "course" },
+      { "title": "On Writing Well — William Zinsser (overview)", "url": "https://en.wikipedia.org/wiki/On_Writing_Well", "type": "book" }
+    ]
   },
   {
     "slug": "collaboration-teamwork",
@@ -213,7 +326,11 @@
     "category": "Ways of working",
     "summary": "Working effectively inside a team: giving and receiving code review and feedback constructively, sharing context, supporting teammates, and operating well within agile rituals like stand-ups, sprint planning, and retrospectives.",
     "how_to_close": "Contribute to a shared codebase (an open-source project or a group project) where you review others' work and respond to reviews of your own. Practise giving specific, kind, actionable feedback, keep teammates unblocked by sharing context early, and be able to describe your role in a real team project — including a disagreement you resolved well.",
-    "keywords": ["teamwork", "collaboration", "cross-functional", "agile", "scrum", "code review", "feedback", "pair programming", "team player"]
+    "keywords": ["teamwork", "collaboration", "cross-functional", "agile", "scrum", "code review", "feedback", "pair programming", "team player"],
+    "resources": [
+      { "title": "Google Engineering Practices — How to do a code review", "url": "https://google.github.io/eng-practices/review/", "type": "docs" },
+      { "title": "Conventional Comments — better review feedback", "url": "https://conventionalcomments.org/", "type": "article" }
+    ]
   },
   {
     "slug": "ownership-initiative",
@@ -221,7 +338,11 @@
     "category": "Ways of working",
     "summary": "Taking end-to-end responsibility for outcomes rather than tasks: driving work without being told every step, following through on details, surfacing risks early, and treating a problem as yours until it is genuinely resolved.",
     "how_to_close": "Look for the unowned gap on a project and take it: propose the fix, see it through to production, and follow up on the result. Demonstrate ownership in your story by describing something you drove from idea to shipped outcome — including how you handled a setback — rather than work that was handed to you fully specified.",
-    "keywords": ["ownership", "initiative", "proactive", "self-starter", "accountability", "autonomy", "self-directed", "drive", "responsibility"]
+    "keywords": ["ownership", "initiative", "proactive", "self-starter", "accountability", "autonomy", "self-directed", "drive", "responsibility"],
+    "resources": [
+      { "title": "StaffEng — stories of driving work end-to-end", "url": "https://staffeng.com/", "type": "article" },
+      { "title": "Extreme Ownership — Jocko Willink (overview)", "url": "https://en.wikipedia.org/wiki/Extreme_Ownership", "type": "book" }
+    ]
   },
   {
     "slug": "adaptability",
@@ -229,6 +350,10 @@
     "category": "Ways of working",
     "summary": "Staying effective when requirements shift, information is incomplete, or priorities change: making reasonable progress under uncertainty, adjusting quickly to new tools or contexts, and remaining calm and pragmatic when plans change.",
     "how_to_close": "Deliberately work on under-specified tasks: make and document a reasonable assumption, ship a small slice, then adjust as you learn rather than waiting for perfect clarity. Build comfort switching contexts (a new language or domain) and be ready to describe a time priorities changed mid-project and how you re-planned without losing momentum.",
-    "keywords": ["adaptability", "flexibility", "handling ambiguity", "uncertainty", "resilience", "agile", "fast-paced", "change", "pragmatic"]
+    "keywords": ["adaptability", "flexibility", "handling ambiguity", "uncertainty", "resilience", "agile", "fast-paced", "change", "pragmatic"],
+    "resources": [
+      { "title": "Manifesto for Agile Software Development", "url": "https://agilemanifesto.org/", "type": "article" },
+      { "title": "Mindset: The New Psychology of Success — Carol Dweck (overview)", "url": "https://en.wikipedia.org/wiki/Mindset_(book)", "type": "book" }
+    ]
   }
 ]

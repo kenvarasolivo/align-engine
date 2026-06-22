@@ -100,6 +100,24 @@ class AnalysisResponse(BaseModel):
     )
 
 
+class SkillResource(BaseModel):
+    """A real, curated learning resource attached to a KB card.
+
+    Resources are stored with the card and surfaced verbatim from retrieval —
+    the LLM never generates a URL, so every link the user sees is a real,
+    citable resource rather than a hallucinated one. This is what makes the
+    RAG layer add information the model lacks instead of paraphrasing what it
+    already knows.
+    """
+
+    title: str = Field(..., description="Human-readable resource title.")
+    url: str = Field(..., description="Canonical URL of the resource.")
+    type: Optional[str] = Field(
+        None,
+        description="Resource kind, e.g. 'docs', 'course', 'article', 'book', 'tool'.",
+    )
+
+
 class RetrievedSkill(BaseModel):
     """A knowledge-base card retrieved from pgvector for a skill gap.
 
@@ -114,6 +132,10 @@ class RetrievedSkill(BaseModel):
     summary: str = Field(..., description="What the skill is.")
     how_to_close: str = Field(..., description="Concrete guidance for closing the gap.")
     similarity: float = Field(..., description="Cosine similarity to the query gap, 0-1 (higher = closer).")
+    resources: List[SkillResource] = Field(
+        default_factory=list,
+        description="Curated, real learning resources for this skill, surfaced verbatim (never model-generated).",
+    )
 
 
 class SkillCoachRequest(BaseModel):
