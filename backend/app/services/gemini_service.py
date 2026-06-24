@@ -97,6 +97,24 @@ def _get_client() -> genai.Client:
 
 
 def _build_prompt(payload: AnalyzeRequest) -> str:
+    title = (payload.title or "").strip()
+
+    # The user-supplied title typically encodes the target company and/or role
+    # (e.g. "Acme — Summer Internship"). It is NOT part of the resume or job
+    # description, so surface it explicitly and let the draft use it to fill the
+    # company/position when the documents don't otherwise state them.
+    target_section = ""
+    target_rule = ""
+    if title:
+        target_section = f"=== TARGET (company / role label) ===\n{title}\n\n"
+        target_rule = (
+            "- TARGET LABEL: a user-supplied label for this application is provided above. When "
+            "the resume and job description do NOT explicitly state the company name or the exact "
+            "position/role, use this label to fill them in the draft (subject line, salutation, "
+            "header) instead of a bracketed placeholder. Treat it as the company/role only — it is "
+            "NOT evidence of experience, so never use it in matching_skills or as resume evidence.\n"
+        )
+
     return (
         "Analyze the resume against the job description, then produce the structured result.\n\n"
         "ANALYSIS RULES:\n"
@@ -110,9 +128,11 @@ def _build_prompt(payload: AnalyzeRequest) -> str:
         "'evidence' quote taken VERBATIM from the resume that proves it — never paraphrase in a "
         "way that adds facts, and never use the job description as evidence.\n"
         "- skill_gaps: the 3-5 most crucial skills/keywords the job description requires but "
-        "the resume does not credibly demonstrate, as short tag-style phrases.\n\n"
+        "the resume does not credibly demonstrate, as short tag-style phrases.\n"
+        f"{target_rule}\n"
         f"{_MODE_RULES[payload.mode]}\n\n"
         f"{_LANGUAGE_RULES[payload.language]}\n\n"
+        f"{target_section}"
         "=== RESUME ===\n"
         f"{payload.resume_text}\n\n"
         "=== JOB DESCRIPTION ===\n"
