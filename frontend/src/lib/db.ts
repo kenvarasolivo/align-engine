@@ -111,6 +111,11 @@ export async function updateFinalDraft(id: string, finalDraft: string): Promise<
   if (error) throw error;
 }
 
+export async function renameAnalysis(id: string, title: string): Promise<void> {
+  const { error } = await client().from("analyses").update({ title }).eq("id", id);
+  if (error) throw error;
+}
+
 // ---- Usage log (read-only for users; written by the backend) ----
 
 export async function listUsage(): Promise<UsageRow[]> {

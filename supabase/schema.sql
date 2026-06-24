@@ -52,6 +52,7 @@ create table if not exists public.analyses (
   user_id uuid not null references auth.users (id) on delete cascade,
   resume_id uuid references public.resumes (id) on delete set null,
   job_description_id uuid references public.job_descriptions (id) on delete set null,
+  title text,
   resume_snapshot text not null,
   job_description_snapshot text not null,
   mode text not null check (mode in ('anschreiben', 'email')),
@@ -70,6 +71,8 @@ create table if not exists public.analyses (
 -- Additive columns for existing deployments (the alignment score + its rationale).
 alter table public.analyses add column if not exists match_score integer;
 alter table public.analyses add column if not exists score_rationale text;
+-- Editable history title (defaults to the job title at analysis time; renameable).
+alter table public.analyses add column if not exists title text;
 
 create index if not exists analyses_user_idx on public.analyses (user_id, created_at desc);
 

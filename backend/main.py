@@ -123,6 +123,7 @@ async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(No
                     "user_id": user_id,
                     "resume_id": payload.resume_id,
                     "job_description_id": payload.job_description_id,
+                    "title": (payload.title or "").strip() or None,
                     "resume_snapshot": payload.resume_text,
                     "job_description_snapshot": payload.job_description_text,
                     "mode": payload.mode,

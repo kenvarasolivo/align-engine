@@ -95,6 +95,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
 
   const [resumeText, setResumeText] = useState("");
   const [jobDescriptionText, setJobDescriptionText] = useState("");
+  const [resumeTitle, setResumeTitle] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
 
   // Provenance: vault ids when the current texts came from saved items.
   const [activeResumeId, setActiveResumeId] = useState<string | null>(null);
@@ -120,6 +122,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       .then((row) => {
         if (cancelled || !row || resumeTextRef.current.trim()) return;
         setResumeText(row.content);
+        setResumeTitle(row.title);
         setActiveResumeId(row.id);
       })
       .catch(() => {
@@ -161,6 +164,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
           job_description_text: jobDescriptionText,
           mode,
           language,
+          // History title defaults to the job title; fall back to the job's first line.
+          title: jobTitle.trim() || deriveTitle(jobDescriptionText, ""),
           resume_id: activeResumeId,
           job_description_id: activeJobId,
         }),
@@ -188,7 +193,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     try {
       const row = await db.saveResume(
         user.id,
-        deriveTitle(resumeText, `Resume — ${new Date().toLocaleDateString()}`),
+        resumeTitle.trim() || deriveTitle(resumeText, `Resume — ${new Date().toLocaleDateString()}`),
         resumeText
       );
       setActiveResumeId(row.id);
@@ -203,7 +208,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     try {
       const row = await db.saveJob(
         user.id,
-        deriveTitle(jobDescriptionText, `Job — ${new Date().toLocaleDateString()}`),
+        jobTitle.trim() || deriveTitle(jobDescriptionText, `Job — ${new Date().toLocaleDateString()}`),
         jobDescriptionText
       );
       setActiveJobId(row.id);
@@ -215,6 +220,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
 
   const loadResume = (row: ResumeRow) => {
     setResumeText(row.content);
+    setResumeTitle(row.title);
     setActiveResumeId(row.id);
     db.touchResume(row.id).catch(() => {});
     setView("workspace");
@@ -222,6 +228,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
 
   const loadJob = (row: JobRow) => {
     setJobDescriptionText(row.content);
+    setJobTitle(row.title);
     setActiveJobId(row.id);
     setView("workspace");
   };
@@ -229,6 +236,10 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const loadAnalysis = (row: AnalysisRow) => {
     setResumeText(row.resume_snapshot);
     setJobDescriptionText(row.job_description_snapshot);
+    // The analysis only stores the (job-derived) history title; the resume
+    // title isn't persisted, so clear it rather than show a stale one.
+    setResumeTitle("");
+    setJobTitle(row.title ?? "");
     setMode(row.mode);
     setLanguage(row.language);
     setActiveResumeId(row.resume_id);
@@ -254,6 +265,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setView("workspace");
     setResumeText("");
     setJobDescriptionText("");
+    setResumeTitle("");
+    setJobTitle("");
     setActiveResumeId(null);
     setActiveJobId(null);
     setResult(null);
@@ -301,8 +314,12 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
             language={language}
             resumeText={resumeText}
             onResumeChange={setResumeText}
+            resumeTitle={resumeTitle}
+            onResumeTitleChange={setResumeTitle}
             jobDescriptionText={jobDescriptionText}
             onJobDescriptionChange={setJobDescriptionText}
+            jobTitle={jobTitle}
+            onJobTitleChange={setJobTitle}
             onAnalyze={handleAnalyze}
             isLoading={isLoading}
             error={error}

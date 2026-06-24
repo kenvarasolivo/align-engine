@@ -6,8 +6,12 @@ interface InputPanelProps {
   language: Language;
   resumeText: string;
   onResumeChange: (value: string) => void;
+  resumeTitle: string;
+  onResumeTitleChange: (value: string) => void;
   jobDescriptionText: string;
   onJobDescriptionChange: (value: string) => void;
+  jobTitle: string;
+  onJobTitleChange: (value: string) => void;
   onAnalyze: () => void;
   isLoading: boolean;
   error: string | null;
@@ -28,8 +32,11 @@ const STRINGS: Record<
   {
     resumeLabel: string;
     resumePlaceholder: string;
+    resumeTitlePlaceholder: string;
     jobLabel: string;
     jobPlaceholder: string;
+    jobTitlePlaceholder: string;
+    titleLabel: string;
     analyze: string;
     analyzing: string;
     upload: string;
@@ -46,8 +53,11 @@ const STRINGS: Record<
   en: {
     resumeLabel: "Resume",
     resumePlaceholder: "Paste your resume here, or upload a PDF / DOCX / TXT file…",
+    resumeTitlePlaceholder: "e.g. Senior Backend Engineer CV",
     jobLabel: "Job Description",
     jobPlaceholder: "Paste the job description here…",
+    jobTitlePlaceholder: "e.g. Acme — Platform Engineer",
+    titleLabel: "Title",
     analyze: "Run Alignment Analysis",
     analyzing: "Analyzing…",
     upload: "Upload file",
@@ -63,8 +73,11 @@ const STRINGS: Record<
   de: {
     resumeLabel: "Lebenslauf",
     resumePlaceholder: "Lebenslauf hier einfügen oder als PDF / DOCX / TXT hochladen…",
+    resumeTitlePlaceholder: "z. B. Lebenslauf Senior Backend Engineer",
     jobLabel: "Stellenbeschreibung",
     jobPlaceholder: "Stellenbeschreibung hier einfügen…",
+    jobTitlePlaceholder: "z. B. Acme — Platform Engineer",
+    titleLabel: "Titel",
     analyze: "Analyse starten",
     analyzing: "Analysiere…",
     upload: "Datei hochladen",
@@ -130,12 +143,43 @@ function SaveButton({
   );
 }
 
+function TitleField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="flex items-center gap-2.5 px-5 pb-2">
+      <span className="label-caps shrink-0 text-charcoal/45">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        aria-label={label}
+        spellCheck={false}
+        className="flex-1 min-w-0 h-7 rounded-md border border-transparent bg-transparent px-1.5 text-sm font-medium text-charcoal outline-none transition-colors duration-150 placeholder:font-normal placeholder:text-charcoal/30 hover:border-hairline focus:border-cobalt/50 focus:bg-white focus:ring-4 focus:ring-cobalt/10"
+      />
+    </div>
+  );
+}
+
 export default function InputPanel({
   language,
   resumeText,
   onResumeChange,
+  resumeTitle,
+  onResumeTitleChange,
   jobDescriptionText,
   onJobDescriptionChange,
+  jobTitle,
+  onJobTitleChange,
   onAnalyze,
   isLoading,
   error,
@@ -294,6 +338,13 @@ export default function InputPanel({
           </div>
         </div>
 
+        <TitleField
+          label={t.titleLabel}
+          value={resumeTitle}
+          onChange={onResumeTitleChange}
+          placeholder={t.resumeTitlePlaceholder}
+        />
+
         <div className={wellClass(isDragActive)}>
           <textarea
             value={resumeText}
@@ -335,6 +386,12 @@ export default function InputPanel({
             />
           )}
         </div>
+        <TitleField
+          label={t.titleLabel}
+          value={jobTitle}
+          onChange={onJobTitleChange}
+          placeholder={t.jobTitlePlaceholder}
+        />
         <div className={wellClass()}>
           <textarea
             value={jobDescriptionText}

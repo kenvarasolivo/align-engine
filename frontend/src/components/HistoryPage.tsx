@@ -24,6 +24,9 @@ const STRINGS: Record<
     copied: string;
     delete: string;
     confirmDelete: string;
+    rename: string;
+    saveTitle: string;
+    cancel: string;
     modeLabels: Record<string, string>;
   }
 > = {
@@ -42,6 +45,9 @@ const STRINGS: Record<
     copied: "Copied ✓",
     delete: "Delete",
     confirmDelete: "Delete forever?",
+    rename: "Rename",
+    saveTitle: "Save",
+    cancel: "Cancel",
     modeLabels: { anschreiben: "Anschreiben", email: "Email" },
   },
   de: {
@@ -59,11 +65,18 @@ const STRINGS: Record<
     copied: "Kopiert ✓",
     delete: "Löschen",
     confirmDelete: "Endgültig löschen?",
+    rename: "Umbenennen",
+    saveTitle: "Speichern",
+    cancel: "Abbrechen",
     modeLabels: { anschreiben: "Anschreiben", email: "E-Mail" },
   },
 };
 
 function rowTitle(row: AnalysisRow): string {
+  // Prefer the user's explicit/editable title; fall back to the job's first
+  // line for older rows saved before titles existed.
+  const explicit = row.title?.trim();
+  if (explicit) return explicit.length > 90 ? `${explicit.slice(0, 87)}…` : explicit;
   const firstLine =
     row.job_description_snapshot.split("\n").map((line) => line.trim()).find(Boolean) ?? "—";
   return firstLine.length > 90 ? `${firstLine.slice(0, 87)}…` : firstLine;
@@ -77,6 +90,8 @@ export default function HistoryPage({ language, onLoadAnalysis }: HistoryPagePro
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
     db.listAnalyses()
@@ -88,6 +103,23 @@ export default function HistoryPage({ language, onLoadAnalysis }: HistoryPagePro
     await navigator.clipboard.writeText(row.final_draft ?? row.generated_draft);
     setCopiedId(row.id);
     setTimeout(() => setCopiedId((current) => (current === row.id ? null : current)), 2000);
+  };
+
+  const startRename = (row: AnalysisRow) => {
+    setRenamingId(row.id);
+    setRenameValue(rowTitle(row));
+  };
+
+  const commitRename = async (row: AnalysisRow) => {
+    const title = renameValue.trim();
+    setRenamingId(null);
+    if (!title || title === (row.title ?? "")) return;
+    try {
+      await db.renameAnalysis(row.id, title);
+      setRows((current) => current?.map((item) => (item.id === row.id ? { ...item, title } : item)) ?? null);
+    } catch {
+      setError(t.loadFailed);
+    }
   };
 
   const handleDelete = async (row: AnalysisRow) => {
@@ -212,6 +244,35 @@ export default function HistoryPage({ language, onLoadAnalysis }: HistoryPagePro
               {/* Detail */}
               {isExpanded && (
                 <div className="px-5 pb-5 pt-1 border-t border-hairline space-y-5 animate-fade-in">
+                  {renamingId === row.id && (
+                    <div className="flex items-center gap-2 mt-4">
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(event) => setRenameValue(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") void commitRename(row);
+                          if (event.key === "Escape") setRenamingId(null);
+                        }}
+                        className="flex-1 h-8 px-2.5 text-sm rounded-lg border border-cobalt/50 bg-white outline-none focus:ring-4 focus:ring-cobalt/10 transition-shadow duration-150"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void commitRename(row)}
+                        className="btn-primary px-2.5 py-1 text-xs"
+                      >
+                        {t.saveTitle}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRenamingId(null)}
+                        className="btn-secondary px-2.5 py-1 text-xs"
+                      >
+                        {t.cancel}
+                      </button>
+                    </div>
+                  )}
+
                   <div>
                     <h3 className="label-caps mt-4 mb-2.5">{t.matching}</h3>
                     <div className="flex flex-wrap gap-2">
@@ -268,6 +329,13 @@ export default function HistoryPage({ language, onLoadAnalysis }: HistoryPagePro
                       }`}
                     >
                       {copiedId === row.id ? t.copied : t.copy}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startRename(row)}
+                      className="btn-secondary px-3 py-1.5 text-xs hover:text-cobalt hover:border-cobalt/40"
+                    >
+                      {t.rename}
                     </button>
                     <button
                       type="button"

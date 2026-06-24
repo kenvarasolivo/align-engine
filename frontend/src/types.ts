@@ -92,6 +92,8 @@ export interface AnalysisRow {
   id: string;
   resume_id: string | null;
   job_description_id: string | null;
+  /** Editable history label; null for older rows (falls back to a derived title). */
+  title: string | null;
   resume_snapshot: string;
   job_description_snapshot: string;
   mode: Mode;
