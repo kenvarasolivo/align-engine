@@ -14,6 +14,14 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Apply the saved theme before paint so dark/light never flashes on load. Dark is the default. -->
+    <script>
+      try {
+        if (localStorage.getItem("align-theme") === "light") {
+          document.documentElement.classList.add("light");
+        }
+      } catch (e) {}
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

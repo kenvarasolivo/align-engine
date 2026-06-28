@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { LogoMark } from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 
 export type AuthMode = "signin" | "signup";
 
@@ -50,12 +51,17 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
       {/* Ambient backdrop: dot grid fading out + soft cobalt glow */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,black_20%,transparent_100%)] opacity-50"
+        className="absolute inset-0 bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_40%,black_20%,transparent_100%)] opacity-50"
       />
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-[radial-gradient(ellipse_50%_40%_at_50%_-10%,rgb(0_82_255_/_0.10),transparent)]"
       />
+
+      {/* Theme toggle, pinned top-right */}
+      <div className="absolute right-4 top-4 z-10">
+        <ThemeToggle />
+      </div>
 
       <div className="relative w-full max-w-sm animate-fade-in-up">
         {/* Brand */}
@@ -67,7 +73,7 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl border border-hairline shadow-lift p-6">
+        <div className="bg-panel rounded-2xl border border-hairline shadow-lift p-6">
           {/* Sign in / Sign up toggle */}
           <div className="flex items-center p-0.5 mb-6 rounded-lg border border-hairline bg-surface-sunken/70" role="group">
             {(
@@ -87,7 +93,7 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
                 aria-pressed={authMode === value}
                 className={`focus-ring flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   authMode === value
-                    ? "bg-white text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                    ? "bg-panel text-cobalt shadow-xs ring-1 ring-black/[0.04]"
                     : "text-charcoal/60 hover:text-obsidian"
                 }`}
               >
@@ -108,7 +114,7 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
                 autoComplete="email"
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
-                className="w-full h-11 px-3.5 text-sm rounded-lg border border-hairline bg-white text-charcoal shadow-xs outline-none transition-all duration-150 placeholder:text-charcoal/30 hover:border-hairline-strong focus:border-cobalt/60 focus:ring-4 focus:ring-cobalt/10"
+                className="w-full h-11 px-3.5 text-sm rounded-lg border border-hairline bg-panel text-charcoal shadow-xs outline-none transition-all duration-150 placeholder:text-charcoal/30 hover:border-hairline-strong focus:border-cobalt/60 focus:ring-4 focus:ring-cobalt/10"
               />
             </div>
 
@@ -124,7 +130,7 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
                 autoComplete={authMode === "signin" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
-                className="w-full h-11 px-3.5 text-sm rounded-lg border border-hairline bg-white text-charcoal shadow-xs outline-none transition-all duration-150 placeholder:text-charcoal/30 hover:border-hairline-strong focus:border-cobalt/60 focus:ring-4 focus:ring-cobalt/10"
+                className="w-full h-11 px-3.5 text-sm rounded-lg border border-hairline bg-panel text-charcoal shadow-xs outline-none transition-all duration-150 placeholder:text-charcoal/30 hover:border-hairline-strong focus:border-cobalt/60 focus:ring-4 focus:ring-cobalt/10"
               />
             </div>
 
@@ -191,7 +197,7 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
           <summary className="focus-ring cursor-pointer list-none rounded-md text-center text-xs font-medium text-charcoal/40 hover:text-cobalt transition-colors duration-150">
             Impressum
           </summary>
-          <div className="mt-4 rounded-2xl border border-hairline bg-white/70 backdrop-blur-sm p-5 text-xs leading-relaxed text-charcoal/60 shadow-xs">
+          <div className="mt-4 rounded-2xl border border-hairline bg-panel/70 backdrop-blur-sm p-5 text-xs leading-relaxed text-charcoal/60 shadow-xs">
             <h2 className="text-sm font-semibold text-obsidian">Impressum</h2>
             <p className="mt-3 font-medium text-charcoal/70">
               Information according to § 5 TMG / § 18 MStV:

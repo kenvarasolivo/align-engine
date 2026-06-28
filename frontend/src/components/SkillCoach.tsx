@@ -175,7 +175,7 @@ export default function SkillCoach({ gaps, language, resumeText, jobDescriptionT
                     ).values(),
                   );
                   return (
-                    <li key={`${item.source_slugs.join("-")}-${i}`} className="rounded-lg border border-hairline bg-white px-3.5 py-2.5 shadow-xs">
+                    <li key={`${item.source_slugs.join("-")}-${i}`} className="rounded-lg border border-hairline bg-panel px-3.5 py-2.5 shadow-xs">
                       <div className="text-sm font-semibold text-obsidian">{item.gap}</div>
                       <p className="mt-1 text-xs leading-relaxed text-charcoal/75">{item.guidance}</p>
                       {itemSources.length > 0 && (

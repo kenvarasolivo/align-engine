@@ -1,4 +1,5 @@
 import { LogoMark } from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 import type { Language, Mode, UsageInfo, View } from "../types";
 
 interface HeaderProps {
@@ -61,7 +62,7 @@ export default function Header({
   const quotaRatio = usage ? usage.used_today / Math.max(usage.daily_limit, 1) : 0;
 
   return (
-    <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 lg:px-6 bg-white border-b border-hairline">
+    <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 lg:px-6 bg-panel border-b border-hairline">
       <div className="flex items-center gap-3 lg:gap-6 min-w-0">
         {/* Brand — returns to the landing page */}
         <button
@@ -100,7 +101,7 @@ export default function Header({
         {/* Daily quota chip with depletion bar */}
         {usage && (
           <span
-            className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-full border border-hairline bg-white shadow-xs"
+            className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-full border border-hairline bg-panel shadow-xs"
             title={language === "de" ? "Analysen heute" : "Analyses today"}
           >
             <span className="h-1.5 w-12 rounded-full bg-surface-sunken overflow-hidden" aria-hidden="true">
@@ -128,7 +129,7 @@ export default function Header({
                 aria-pressed={mode === value}
                 className={`focus-ring whitespace-nowrap px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
                   mode === value
-                    ? "bg-white text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                    ? "bg-panel text-cobalt shadow-xs ring-1 ring-black/[0.04]"
                     : "text-charcoal/60 hover:text-obsidian"
                 }`}
               >
@@ -148,7 +149,7 @@ export default function Header({
               aria-pressed={language === value}
               className={`focus-ring px-2.5 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 ${
                 language === value
-                  ? "bg-white text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                  ? "bg-panel text-cobalt shadow-xs ring-1 ring-black/[0.04]"
                   : "text-charcoal/60 hover:text-obsidian"
               }`}
             >
@@ -156,6 +157,9 @@ export default function Header({
             </button>
           ))}
         </div>
+
+        {/* Dark / light theme toggle */}
+        <ThemeToggle />
 
         {/* Auth status */}
         {isSignedIn ? (
@@ -172,7 +176,7 @@ export default function Header({
             <button
               type="button"
               onClick={onSignOut}
-              className="focus-ring px-2.5 py-1.5 text-xs font-medium rounded-lg border border-hairline bg-white text-charcoal/70 shadow-xs transition-all duration-150 hover:text-danger hover:border-danger-border"
+              className="focus-ring px-2.5 py-1.5 text-xs font-medium rounded-lg border border-hairline bg-panel text-charcoal/70 shadow-xs transition-all duration-150 hover:text-danger hover:border-danger-border"
             >
               {language === "de" ? "Abmelden" : "Sign out"}
             </button>

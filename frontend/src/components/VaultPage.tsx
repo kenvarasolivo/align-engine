@@ -129,7 +129,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
       )}
 
       {rows !== null && rows.length === 0 && (
-        <div className="flex flex-col items-center rounded-2xl border border-dashed border-hairline-strong bg-white/60 px-8 py-16 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed border-hairline-strong bg-panel/60 px-8 py-16 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cobalt-50 text-cobalt mb-4" aria-hidden="true">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
@@ -145,7 +145,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
         {rows?.map((row) => (
           <div
             key={row.id}
-            className="bg-white rounded-xl border border-hairline shadow-xs px-5 py-4 transition-shadow duration-200 hover:shadow-card"
+            className="bg-panel rounded-xl border border-hairline shadow-xs px-5 py-4 transition-shadow duration-200 hover:shadow-card"
           >
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
@@ -159,7 +159,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                         if (event.key === "Enter") void commitRename(row);
                         if (event.key === "Escape") setRenamingId(null);
                       }}
-                      className="flex-1 h-8 px-2.5 text-sm rounded-lg border border-cobalt/50 bg-white outline-none focus:ring-4 focus:ring-cobalt/10 transition-shadow duration-150"
+                      className="flex-1 h-8 px-2.5 text-sm rounded-lg border border-cobalt/50 bg-panel outline-none focus:ring-4 focus:ring-cobalt/10 transition-shadow duration-150"
                     />
                     <button
                       type="button"
@@ -214,7 +214,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                     className={`focus-ring px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 ${
                       confirmingId === row.id
                         ? "bg-danger border-danger text-white shadow-xs"
-                        : "border-hairline bg-white text-charcoal/70 shadow-xs hover:text-danger hover:border-danger-border"
+                        : "border-hairline bg-panel text-charcoal/70 shadow-xs hover:text-danger hover:border-danger-border"
                     }`}
                   >
                     {confirmingId === row.id ? t.confirmDelete : t.delete}

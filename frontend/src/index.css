@@ -3,6 +3,84 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * ALIGN palette — themeable via CSS variables. Dark navy is the default
+   * (:root); light mode is opt-in by adding `.light` to <html> (the theme
+   * toggle / pre-paint script in index.html manage the class). Every value is
+   * an "R G B" channel triple so Tailwind's rgb(var(--x) / <alpha-value>)
+   * tokens (tailwind.config.js) can layer opacity on top.
+   */
+  :root {
+    --surface: 13 15 24; /* #0D0F18 — app canvas (Mercury-style near-black navy) */
+    --surface-sunken: 9 11 18; /* #090B12 — wells, sunken, skeleton base */
+    --panel: 25 27 39; /* #191B27 — cards, header, elevated panels */
+    --obsidian: 241 243 248; /* #F1F3F8 — headings */
+    --charcoal: 199 203 216; /* #C7CBD8 — body copy */
+    --hairline: 39 42 58; /* #272A3A — hairline borders */
+    --hairline-strong: 54 58 78; /* #363A4E — hover borders, dashed empties */
+
+    --cobalt: 77 130 255; /* #4D82FF — accent / CTA */
+    --cobalt-hover: 102 149 255; /* #6695FF */
+    --cobalt-active: 61 114 240; /* #3D72F0 */
+    --cobalt-50: 22 35 63; /* #16233F — active pill / soft accent bg */
+    --cobalt-100: 28 46 80; /* #1C2E50 */
+    --cobalt-200: 39 64 110; /* #27406E */
+
+    --success: 52 211 153; /* #34D399 */
+    --success-strong: 110 231 183; /* #6EE7B7 — text on soft */
+    --success-soft: 14 38 30; /* #0E261E */
+    --success-border: 31 92 69; /* #1F5C45 */
+
+    --warning: 251 191 36; /* #FBBF24 */
+    --warning-strong: 252 211 77; /* #FCD34D */
+    --warning-soft: 42 32 16; /* #2A2010 */
+    --warning-border: 92 74 31; /* #5C4A1F */
+
+    --danger: 248 113 113; /* #F87171 */
+    --danger-strong: 252 165 165; /* #FCA5A5 */
+    --danger-soft: 42 20 22; /* #2A1416 */
+    --danger-border: 92 42 46; /* #5C2A2E */
+
+    --skeleton-shimmer: rgb(255 255 255 / 0.07);
+    --dot-color: #2c3048; /* ambient dot-grid texture — dim on dark */
+  }
+
+  /* Light theme — the original ALIGN palette, opt-in via <html class="light"> */
+  :root.light {
+    --surface: 250 250 250; /* #FAFAFA */
+    --surface-sunken: 244 244 245; /* #F4F4F5 */
+    --panel: 255 255 255; /* #FFFFFF */
+    --obsidian: 10 10 10; /* #0A0A0A */
+    --charcoal: 38 38 38; /* #262626 */
+    --hairline: 229 231 235; /* #E5E7EB */
+    --hairline-strong: 212 212 216; /* #D4D4D8 */
+
+    --cobalt: 0 82 255; /* #0052FF */
+    --cobalt-hover: 0 70 219; /* #0046DB */
+    --cobalt-active: 0 60 189; /* #003CBD */
+    --cobalt-50: 238 244 255; /* #EEF4FF */
+    --cobalt-100: 219 230 255; /* #DBE6FF */
+    --cobalt-200: 184 205 255; /* #B8CDFF */
+
+    --success: 5 150 105; /* #059669 */
+    --success-strong: 4 120 87; /* #047857 */
+    --success-soft: 236 253 245; /* #ECFDF5 */
+    --success-border: 167 243 208; /* #A7F3D0 */
+
+    --warning: 217 119 6; /* #D97706 */
+    --warning-strong: 180 83 9; /* #B45309 */
+    --warning-soft: 255 251 235; /* #FFFBEB */
+    --warning-border: 253 230 138; /* #FDE68A */
+
+    --danger: 220 38 38; /* #DC2626 */
+    --danger-strong: 185 28 28; /* #B91C1C */
+    --danger-soft: 254 242 242; /* #FEF2F2 */
+    --danger-border: 254 202 202; /* #FECACA */
+
+    --skeleton-shimmer: rgb(255 255 255 / 0.7);
+    --dot-color: #d4d4d8; /* original light-mode dot color */
+  }
+
   html,
   body,
   #root {
@@ -10,6 +88,10 @@
   }
 
   html {
+    color-scheme: dark;
+  }
+
+  html.light {
     color-scheme: light;
   }
 
@@ -24,7 +106,7 @@
   }
 
   ::selection {
-    background-color: rgb(0 82 255 / 0.12);
+    background-color: rgb(77 130 255 / 0.28);
   }
 
   /* Discreet scrollbars to keep the workspace crisp */
@@ -36,23 +118,39 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #e5e7eb;
+    background: rgb(var(--hairline-strong));
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #d4d4d8;
+    background: rgb(var(--cobalt-200));
   }
 }
 
 @layer components {
   /* Shared accessible focus treatment — apply to every interactive element */
   .focus-ring {
-    @apply outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+    @apply outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
   }
 
-  /* Elevated white panel resting on the surface canvas */
+  /* Elevated panel resting on the surface canvas */
   .card {
-    @apply rounded-xl border border-hairline bg-white shadow-card;
+    @apply rounded-xl border border-hairline bg-panel shadow-card;
+  }
+
+  /*
+   * The actual writing surfaces (resume / job description / draft editors)
+   * stay light — white paper with near-black ink — even in dark mode, so the
+   * text you author always reads on a neutral page. Everything else is navy.
+   */
+  .editor-surface {
+    background-color: #ffffff;
+    color: #0a0a0a;
+  }
+  .editor-surface::placeholder {
+    color: rgb(10 10 10 / 0.4);
+  }
+  .editor-surface::selection {
+    background-color: rgb(0 82 255 / 0.16);
   }
 
   /* Ambient caps label — section headers, chrome metadata */
@@ -65,7 +163,7 @@
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-cobalt font-semibold text-white transition-all duration-150 outline-none hover:bg-cobalt-hover active:bg-cobalt-active focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-hairline bg-white font-medium text-charcoal/75 shadow-xs transition-all duration-150 outline-none hover:border-hairline-strong hover:text-obsidian focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-hairline bg-panel font-medium text-charcoal/75 shadow-xs transition-all duration-150 outline-none hover:border-hairline-strong hover:text-obsidian focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40;
   }
 
   /* Shimmer skeleton for loading states */
@@ -77,7 +175,7 @@
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background-image: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.75), transparent);
+    background-image: linear-gradient(90deg, transparent, var(--skeleton-shimmer), transparent);
     animation: skeleton-shimmer 1.6s ease-in-out infinite;
   }
 }

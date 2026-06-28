@@ -251,7 +251,7 @@ export default function InsightsPage({ language }: InsightsPageProps) {
       )}
 
       {analyses !== null && analyses.length === 0 && !error && (
-        <div className="flex flex-col items-center rounded-2xl border border-dashed border-hairline-strong bg-white/60 px-8 py-16 text-center">
+        <div className="flex flex-col items-center rounded-2xl border border-dashed border-hairline-strong bg-panel/60 px-8 py-16 text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cobalt-50 text-cobalt mb-4" aria-hidden="true">
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3 3v16a2 2 0 002 2h16" />
@@ -274,7 +274,7 @@ export default function InsightsPage({ language }: InsightsPageProps) {
             ].map(({ label, value }) => (
               <div
                 key={label}
-                className="bg-white rounded-xl border border-hairline shadow-xs px-5 py-4 transition-shadow duration-200 hover:shadow-card"
+                className="bg-panel rounded-xl border border-hairline shadow-xs px-5 py-4 transition-shadow duration-200 hover:shadow-card"
               >
                 <p className="label-caps">{label}</p>
                 <p className="mt-1.5 text-2xl font-extrabold tracking-tight tabular-nums text-obsidian">{value}</p>
@@ -300,7 +300,7 @@ export default function InsightsPage({ language }: InsightsPageProps) {
               />
             </section>
 
-            <section className="rounded-xl border border-warning-border bg-white shadow-card p-6">
+            <section className="rounded-xl border border-warning-border bg-panel shadow-card p-6">
               <div className="flex items-center gap-2 mb-1">
                 <span className="h-2.5 w-2.5 rounded-full bg-warning" aria-hidden="true" />
                 <h3 className="text-sm font-semibold text-obsidian">{t.gapsTitle}</h3>

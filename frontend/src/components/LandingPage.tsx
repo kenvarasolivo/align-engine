@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import { LogoMark } from "./Logo";
+import ThemeToggle from "./ThemeToggle";
 import type { AuthMode } from "./LoginPage";
 
 interface LandingPageProps {
@@ -127,7 +128,7 @@ function ProductVisual() {
       aria-hidden="true"
     >
       {/* Faux app header */}
-      <div className="flex h-11 items-center justify-between border-b border-hairline bg-white px-4">
+      <div className="flex h-11 items-center justify-between border-b border-hairline bg-panel px-4">
         <div className="flex items-center gap-2">
           <LogoMark className="h-5 w-5" />
           <span className="text-xs font-extrabold tracking-tight text-obsidian">ALIGN</span>
@@ -212,7 +213,7 @@ function ImpressumDetails() {
       <summary className="focus-ring cursor-pointer list-none rounded-md text-xs font-medium text-charcoal/40 transition-colors duration-150 hover:text-cobalt">
         Impressum
       </summary>
-      <div className="mt-4 rounded-2xl border border-hairline bg-white/70 p-5 text-xs leading-relaxed text-charcoal/60 shadow-xs backdrop-blur-sm">
+      <div className="mt-4 rounded-2xl border border-hairline bg-panel/70 p-5 text-xs leading-relaxed text-charcoal/60 shadow-xs backdrop-blur-sm">
         <h2 className="text-sm font-semibold text-obsidian">Impressum</h2>
         <p className="mt-3 font-medium text-charcoal/70">
           Information according to § 5 TMG / § 18 MStV:
@@ -270,7 +271,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
       {/* ── Sticky nav ─────────────────────────────────────────────── */}
       <header
         className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ease-out-quart ${
-          scrolled ? "border-b border-hairline bg-white/85 shadow-xs backdrop-blur-md" : "border-b border-transparent"
+          scrolled ? "border-b border-hairline bg-panel/85 shadow-xs backdrop-blur-md" : "border-b border-transparent"
         }`}
       >
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
@@ -288,15 +289,19 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
           </a>
 
           {isSignedIn ? (
-            <button
-              type="button"
-              onClick={() => void signOut()}
-              className="btn-secondary h-9 px-4 text-sm"
-            >
-              Log out
-            </button>
+            <nav className="flex items-center gap-2" aria-label="Account">
+              <ThemeToggle />
+              <button
+                type="button"
+                onClick={() => void signOut()}
+                className="btn-secondary h-9 px-4 text-sm"
+              >
+                Log out
+              </button>
+            </nav>
           ) : (
             <nav className="flex items-center gap-2" aria-label="Account">
+              <ThemeToggle />
               <button
                 type="button"
                 onClick={() => onOpenAuth("signin")}
@@ -318,10 +323,12 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
 
       {/* ── Hero ───────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden px-4 pb-20 pt-32 sm:px-6 sm:pt-36">
-        {/* Ambient backdrop: dot grid fading out + soft cobalt glow + slow drift */}
+        {/* Ambient backdrop: dot grid kept clear of the headline + soft cobalt glow + slow drift.
+            The mask is transparent (no dots) around the centered hero text and fades the dots
+            back in toward the edges so the texture never competes with readability. */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(#d4d4d8_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_70%_55%_at_50%_35%,black_15%,transparent_100%)] opacity-50"
+          className="absolute inset-0 bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_32%,transparent_28%,black_80%)] opacity-50"
         />
         <div
           aria-hidden="true"
@@ -337,12 +344,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
         />
 
         <div className="relative mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-cobalt-100 bg-cobalt-50 px-3 py-1 text-2xs font-semibold text-cobalt animate-fade-in">
-            <span className="h-1.5 w-1.5 rounded-full bg-cobalt" aria-hidden="true" />
-            AI-powered job alignment
-          </span>
-
-          <h1 className="mt-6 text-4xl font-extrabold leading-[1.08] tracking-tight text-obsidian sm:text-5xl lg:text-6xl animate-fade-in-up">
+          <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-obsidian sm:text-5xl lg:text-6xl animate-fade-in-up">
             Tailor your application to any job —{" "}
             <span className="bg-gradient-to-r from-cobalt to-[#3B82F6] bg-clip-text text-transparent">
               in seconds
@@ -418,7 +420,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
       </section>
 
       {/* ── How it works ───────────────────────────────────────────── */}
-      <section className="border-y border-hairline bg-white px-4 py-16 sm:px-6 sm:py-20">
+      <section className="border-y border-hairline bg-panel px-4 py-16 sm:px-6 sm:py-20">
         <div ref={steps.ref} className="mx-auto max-w-5xl">
           <div className="text-center">
             <p className="label-caps">How it works</p>
@@ -460,7 +462,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
       <section className="px-4 py-20 sm:px-6 sm:py-24">
         <div
           ref={ctaBand.ref}
-          className={`relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-cobalt-100 bg-gradient-to-b from-cobalt-50 to-white px-6 py-14 text-center shadow-card transition-all duration-500 ease-out-quart sm:px-12 ${
+          className={`relative mx-auto max-w-4xl overflow-hidden rounded-3xl border border-cobalt-100 bg-gradient-to-b from-cobalt-50 to-panel px-6 py-14 text-center shadow-card transition-all duration-500 ease-out-quart sm:px-12 ${
             ctaBand.visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
           }`}
         >
@@ -498,7 +500,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────── */}
-      <footer className="border-t border-hairline bg-white px-4 py-12 sm:px-6">
+      <footer className="border-t border-hairline bg-panel px-4 py-12 sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 text-center">
           <div className="flex items-center gap-2.5 select-none">
             <LogoMark className="h-6 w-6" />

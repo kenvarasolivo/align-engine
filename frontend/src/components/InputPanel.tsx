@@ -164,7 +164,7 @@ function TitleField({
         placeholder={placeholder}
         aria-label={label}
         spellCheck={false}
-        className="flex-1 min-w-0 h-7 rounded-md border border-transparent bg-transparent px-1.5 text-sm font-medium text-charcoal outline-none transition-colors duration-150 placeholder:font-normal placeholder:text-charcoal/30 hover:border-hairline focus:border-cobalt/50 focus:bg-white focus:ring-4 focus:ring-cobalt/10"
+        className="flex-1 min-w-0 h-7 rounded-md border border-transparent bg-transparent px-1.5 text-sm font-medium text-charcoal outline-none transition-colors duration-150 placeholder:font-normal placeholder:text-charcoal/30 hover:border-hairline focus:border-cobalt/50 focus:bg-panel focus:ring-4 focus:ring-cobalt/10"
       />
     </div>
   );
@@ -248,11 +248,11 @@ export default function InputPanel({
     `flex-1 flex min-h-0 mx-4 mb-4 rounded-xl border bg-surface/70 transition-all duration-150 ${
       active
         ? "border-cobalt/60 bg-cobalt-50/50"
-        : "border-hairline focus-within:border-cobalt/50 focus-within:bg-white focus-within:ring-4 focus-within:ring-cobalt/10"
+        : "border-hairline focus-within:border-cobalt/50 focus-within:bg-panel focus-within:ring-4 focus-within:ring-cobalt/10"
     }`;
 
   return (
-    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-white shadow-card">
+    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-panel shadow-card">
       {/* Top half — Resume (paste, upload, or drag & drop) */}
       <div
         className="relative flex-1 flex flex-col min-h-0"
@@ -352,12 +352,12 @@ export default function InputPanel({
             placeholder={t.resumePlaceholder}
             spellCheck={false}
             aria-label={t.resumeLabel}
-            className="flex-1 w-full min-h-0 rounded-xl px-4 py-3 text-sm leading-relaxed text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
+            className="editor-surface flex-1 w-full min-h-0 rounded-xl px-4 py-3 text-sm leading-relaxed border-none outline-none"
           />
         </div>
 
         {isDragActive && (
-          <div className="absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-cobalt bg-white/85 backdrop-blur-sm pointer-events-none animate-fade-in">
+          <div className="absolute inset-3 z-10 flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-cobalt bg-panel/85 backdrop-blur-sm pointer-events-none animate-fade-in">
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-cobalt-50 text-cobalt">
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 16V4m0 0l-4 4m4-4l4 4" />
@@ -399,7 +399,7 @@ export default function InputPanel({
             placeholder={t.jobPlaceholder}
             spellCheck={false}
             aria-label={t.jobLabel}
-            className="flex-1 w-full min-h-0 rounded-xl px-4 py-3 text-sm leading-relaxed text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
+            className="editor-surface flex-1 w-full min-h-0 rounded-xl px-4 py-3 text-sm leading-relaxed border-none outline-none"
           />
         </div>
       </div>

@@ -4,44 +4,48 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ALIGN design system — core neutrals
-        obsidian: "#0A0A0A", // headings
-        charcoal: "#262626", // body copy
+        // ALIGN design system — driven by CSS variables (see index.css) so the
+        // whole palette can be themed in one place. Dark navy is the default.
+        // `<alpha-value>` keeps every `/opacity` utility (text-charcoal/45 …) working.
+        obsidian: "rgb(var(--obsidian) / <alpha-value>)", // headings
+        charcoal: "rgb(var(--charcoal) / <alpha-value>)", // body copy
+        // Elevated surface (cards, header, panels) — replaces literal bg-white.
+        panel: "rgb(var(--panel) / <alpha-value>)",
         surface: {
-          DEFAULT: "#FAFAFA", // app canvas
-          sunken: "#F4F4F5", // wells, inset regions, skeleton base
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)", // app canvas
+          sunken: "rgb(var(--surface-sunken) / <alpha-value>)", // wells, inset regions, skeleton base
         },
         hairline: {
-          DEFAULT: "#E5E7EB", // faint hairline borders
-          strong: "#D4D4D8", // hover borders, dashed empties
+          DEFAULT: "rgb(var(--hairline) / <alpha-value>)", // faint hairline borders
+          strong: "rgb(var(--hairline-strong) / <alpha-value>)", // hover borders, dashed empties
         },
         // Accent — exclusively CTAs, active states, loading
         cobalt: {
-          DEFAULT: "#0052FF",
-          hover: "#0046DB",
-          active: "#003CBD",
-          50: "#EEF4FF",
-          100: "#DBE6FF",
-          200: "#B8CDFF",
+          DEFAULT: "rgb(var(--cobalt) / <alpha-value>)",
+          hover: "rgb(var(--cobalt-hover) / <alpha-value>)",
+          active: "rgb(var(--cobalt-active) / <alpha-value>)",
+          50: "rgb(var(--cobalt-50) / <alpha-value>)",
+          100: "rgb(var(--cobalt-100) / <alpha-value>)",
+          200: "rgb(var(--cobalt-200) / <alpha-value>)",
         },
         // Semantic status tokens
         success: {
-          DEFAULT: "#059669",
-          strong: "#047857",
-          soft: "#ECFDF5",
-          border: "#A7F3D0",
+          DEFAULT: "rgb(var(--success) / <alpha-value>)",
+          strong: "rgb(var(--success-strong) / <alpha-value>)",
+          soft: "rgb(var(--success-soft) / <alpha-value>)",
+          border: "rgb(var(--success-border) / <alpha-value>)",
         },
         warning: {
-          DEFAULT: "#D97706",
-          strong: "#B45309",
-          soft: "#FFFBEB",
-          border: "#FDE68A",
+          DEFAULT: "rgb(var(--warning) / <alpha-value>)",
+          strong: "rgb(var(--warning-strong) / <alpha-value>)",
+          soft: "rgb(var(--warning-soft) / <alpha-value>)",
+          border: "rgb(var(--warning-border) / <alpha-value>)",
         },
         danger: {
-          DEFAULT: "#DC2626",
-          strong: "#B91C1C",
-          soft: "#FEF2F2",
-          border: "#FECACA",
+          DEFAULT: "rgb(var(--danger) / <alpha-value>)",
+          strong: "rgb(var(--danger-strong) / <alpha-value>)",
+          soft: "rgb(var(--danger-soft) / <alpha-value>)",
+          border: "rgb(var(--danger-border) / <alpha-value>)",
         },
       },
       fontFamily: {

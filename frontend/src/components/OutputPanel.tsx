@@ -96,7 +96,7 @@ function AnalysisSkeleton({ label }: { label: string }) {
   return (
     <div className="p-5 lg:p-6 space-y-6 animate-fade-in" aria-busy="true">
       {/* Status line */}
-      <div className="rounded-xl border border-hairline bg-white p-4 shadow-xs">
+      <div className="rounded-xl border border-hairline bg-panel p-4 shadow-xs">
         <div className="flex items-center gap-2.5">
           <span className="h-2 w-2 rounded-full bg-cobalt animate-pulse" aria-hidden="true" />
           <p className="text-sm font-medium text-cobalt">{label}</p>
@@ -160,9 +160,9 @@ export default function OutputPanel({
   const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0;
 
   return (
-    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-white shadow-card">
+    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-panel shadow-card">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 px-3 py-2 bg-white border-b border-hairline" role="tablist">
+      <div className="flex items-center gap-1 px-3 py-2 bg-panel border-b border-hairline" role="tablist">
         {tabs.map(({ value, label }) => (
           <button
             key={value}
@@ -189,7 +189,7 @@ export default function OutputPanel({
           ) : result ? (
             <div className="p-5 lg:p-6 space-y-6 animate-fade-in-up">
               {/* Alignment score — the payoff */}
-              <div className="flex items-center gap-5 rounded-xl border border-hairline bg-white p-4 shadow-xs">
+              <div className="flex items-center gap-5 rounded-xl border border-hairline bg-panel p-4 shadow-xs">
                 <ScoreRing pct={scorePct} />
                 <div className="min-w-0">
                   <p className="label-caps">{t.scoreLabel}</p>
@@ -279,7 +279,7 @@ export default function OutputPanel({
           )}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 flex flex-col bg-white">
+        <div className="flex-1 min-h-0 flex flex-col bg-panel">
           <div className="flex items-center justify-between gap-3 px-5 lg:px-6 py-2 border-b border-hairline bg-surface/40">
             <span className="label-caps">{t.draftTab}</span>
             {wordCount > 0 && (
@@ -294,7 +294,7 @@ export default function OutputPanel({
             placeholder={t.draftEmpty}
             spellCheck={false}
             aria-label={t.draftTab}
-            className="flex-1 w-full min-h-0 px-6 lg:px-8 py-5 text-[11pt] leading-relaxed [font-family:Calibri,Carlito,'Segoe_UI',Arial,sans-serif] text-charcoal bg-transparent border-none outline-none placeholder:text-charcoal/35"
+            className="editor-surface flex-1 w-full min-h-0 px-6 lg:px-8 py-5 text-[11pt] leading-relaxed [font-family:Calibri,Carlito,'Segoe_UI',Arial,sans-serif] border-none outline-none"
           />
         </div>
       )}
