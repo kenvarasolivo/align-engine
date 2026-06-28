@@ -80,7 +80,15 @@ Open http://localhost:5173 — the Vite dev server proxies `/api/*` to the backe
 
 ### Running locally
 
-Once both `.env` files are in place and dependencies are installed, start the two dev servers in separate terminals:
+Once both `.env` files are in place and dependencies are installed, start the whole stack with one command from the repo root:
+
+```powershell
+.\dev.ps1           # backend + frontend, each in its own window
+.\dev.ps1 -Same     # both in the current terminal (interleaved output)
+```
+
+<details>
+<summary>Or start the two dev servers manually in separate terminals</summary>
 
 ```powershell
 # Terminal 1 — backend
@@ -89,6 +97,8 @@ cd backend; .\.venv\Scripts\Activate.ps1; uvicorn main:app --reload --port 8000
 # Terminal 2 — frontend
 cd frontend; npm run dev
 ```
+
+</details>
 
 Then open http://localhost:5173 (Vite proxies `/api/*` to the backend on port 8000).
 
