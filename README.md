@@ -1,32 +1,54 @@
-# ALIGN
+# ALIGN — AI-Driven Professional Alignment Engine
 
-**AI-Driven Professional Alignment Engine** — a decoupled, human-in-the-loop workspace that analyzes a job description against your resume, extracts a skill alignment matrix, and drafts editable outreach assets (one-page Anschreiben or punchy cold email) in English or German.
+![ALIGN landing page](docs/landing.png)
 
-## Architecture
+ALIGN reads a job description against your resume, shows exactly where you match and where you don't, and drafts an editable cover letter (Anschreiben) or cold email in English or German. It's a human-in-the-loop workspace for job seekers — you stay in control; nothing ships without your edit.
 
-- `backend/` — FastAPI + the official `google-genai` SDK (`gemini-2.5-flash`) with Structured Outputs enforced via a Pydantic schema. Verifies Supabase JWTs, enforces daily quotas, persists analysis runs, and serves a **retrieval-augmented Skill Coach** backed by pgvector.
-- `frontend/` — React + Vite + Tailwind CSS, viewport-locked 50/50 split workspace, plus signed-in views for history, resume vault, saved jobs, and insights (talks to Supabase directly under RLS).
-- `supabase/` — SQL schema for the Postgres tables, row-level-security policies, and the **pgvector** extension (skill knowledge base + cosine-KNN search function).
+---
 
-## Features
+## 🚀 Features
 
-- **Accounts (optional)** — email/password login via Supabase Auth. Guests can use the full analyzer; nothing is persisted for them.
-- **Analysis history** — every signed-in run is snapshotted (resume, job description, skills, gaps, draft). Revisit, copy, reload into the workspace, or delete. Edits in the Draft Editor autosave back to the history row.
-- **Resume vault** — save resume versions once; the last-used one auto-loads on your next visit.
-- **Saved jobs** — bookmark job descriptions and reanalyze them against any resume later.
-- **Insights** — aggregated across all runs: your most-matched skills vs. recurring gaps (a personal learning roadmap), plus token usage and estimated Gemini cost.
-- **Skill Coach (RAG)** — turns the analyzer's skill gaps into a grounded upskilling plan. Each gap is embedded and matched against a curated skill knowledge base stored in **pgvector** (cosine KNN); the retrieved cards are fed to Gemini, which writes advice drawn *only* from them and cites the source card — so the guidance is auditable, not hallucinated.
-- **Usage tracking / quota** — the backend logs every run to an append-only table and enforces a daily per-user limit (`DAILY_ANALYSIS_LIMIT`, default 20, resets midnight UTC).
+*   **Skill alignment matrix:** Top matching skills (with evidence) vs. crucial gaps, plus an in-range fit score — enforced through a strict Pydantic schema so the model can't return junk.
+*   **Editable drafts:** One-page Anschreiben (strict cover letter) or sub-200-word cold email, in **English or German**. You refine every result in the Draft Editor before it goes anywhere.
+*   **Skill Coach (RAG):** Turns each skill gap into a grounded upskilling plan. Gaps are embedded and matched against a curated knowledge base in **pgvector** (cosine KNN); Gemini writes advice drawn *only* from the retrieved cards and cites its source — auditable, not hallucinated.
+*   **Accounts (optional):** Email/password login via Supabase Auth. Guests get the full analyzer with nothing persisted; signed-in users get history, a resume vault, saved jobs, and insights.
+*   **History, vault & insights:** Every run is snapshotted and reloadable; resumes and jobs are reusable; insights aggregate your most-matched skills vs. recurring gaps, plus token usage and estimated cost.
+*   **Quota & usage tracking:** Append-only run log with a daily per-user limit (`DAILY_ANALYSIS_LIMIT`, default 20, resets midnight UTC) — keeps the project within the Gemini free tier.
 
-## Setup
+---
+
+## 🛠️ Tech Stack
+
+*   **Frontend:** React 18 + Vite + Tailwind CSS — viewport-locked 50/50 split workspace, dark/light mode, talks to Supabase directly under RLS.
+*   **Backend:** FastAPI + the official `google-genai` SDK (`gemini-2.5-flash`) with Structured Outputs; verifies Supabase JWTs, enforces quotas, and serves the RAG Skill Coach.
+*   **Data & Auth:** Supabase (Postgres + Auth + Row-Level Security) with the **pgvector** extension for the skill knowledge base.
+*   **AI:** Google Gemini — `gemini-2.5-flash` for analysis/drafting, `gemini-embedding-001` (768-dim) for retrieval.
+*   **Deployment:** Vercel.
+
+---
+
+## ⚙️ Local Development
+
+Follow these steps to get the full stack running on your machine.
+
+### Prerequisites
+
+*   **Node.js 18+** and **Python 3.10+**
+
+```bash
+node -v
+python --version
+```
+
+*   A free **Supabase** project and a **Gemini API key**.
 
 ### 1. Supabase (once)
 
-1. Create a project at https://supabase.com.
-2. Open **SQL Editor → New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This also enables the `vector` extension and creates the pgvector skill knowledge base + the `match_skill_kb` KNN function.
-3. Grab the **Project URL**, **anon public key**, and **service_role key** from *Project Settings → API*.
+1.  Create a project at https://supabase.com.
+2.  Open **SQL Editor → New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the tables + RLS policies, enables the `vector` extension, and adds the pgvector skill knowledge base + the `match_skill_kb` KNN function.
+3.  Grab the **Project URL**, **anon public key**, and **service_role key** from *Project Settings → API*.
 
-### 2. Backend (Python 3.10+)
+### 2. Backend (FastAPI)
 
 ```powershell
 cd backend
@@ -35,7 +57,7 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Create `backend/.env` (see `backend/.env.example`):
+Create `backend/.env` (see [`backend/.env.example`](backend/.env.example)):
 
 ```
 GEMINI_API_KEY=...
@@ -45,23 +67,15 @@ SUPABASE_SERVICE_ROLE_KEY=...
 DAILY_ANALYSIS_LIMIT=20
 ```
 
-Ingest the skill knowledge base into pgvector (once, and after editing
-[`app/data/skill_kb.json`](backend/app/data/skill_kb.json)) — embeds each card
-with Gemini `gemini-embedding-001` (768-dim) and upserts it into the `skill_kb` table:
+Ingest the skill knowledge base into pgvector (once, and after editing [`app/data/skill_kb.json`](backend/app/data/skill_kb.json)):
 
 ```powershell
 python -m scripts.ingest_kb
 ```
 
-Start the API:
+### 3. Frontend (React + Vite)
 
-```powershell
-uvicorn main:app --reload --port 8000
-```
-
-### 3. Frontend (Node 18+)
-
-Create `frontend/.env` (see `frontend/.env.example`):
+Create `frontend/.env` (see [`frontend/.env.example`](frontend/.env.example)):
 
 ```
 VITE_SUPABASE_URL=https://<project-ref>.supabase.co
@@ -71,16 +85,13 @@ VITE_SUPABASE_ANON_KEY=...
 ```powershell
 cd frontend
 npm install
-npm run dev
 ```
 
-Open http://localhost:5173 — the Vite dev server proxies `/api/*` to the backend on port 8000. If the `VITE_SUPABASE_*` vars are missing, the app silently falls back to guest-only mode.
+> If the `VITE_SUPABASE_*` vars are missing, the app silently falls back to guest-only mode.
 
-> **Vercel:** set the `VITE_SUPABASE_*` vars (frontend) and `GEMINI_API_KEY` + `SUPABASE_*` vars (backend) in the project's environment settings.
+### 4. Run the stack
 
-### Running locally
-
-Once both `.env` files are in place and dependencies are installed, start the whole stack with one command from the repo root:
+From the repo root, start both servers with one command:
 
 ```powershell
 .\dev.ps1           # backend + frontend, each in its own window
@@ -100,14 +111,15 @@ cd frontend; npm run dev
 
 </details>
 
-Then open http://localhost:5173 (Vite proxies `/api/*` to the backend on port 8000).
+Open **http://localhost:5173** — the Vite dev server proxies `/api/*` to the backend on port 8000.
 
-## Testing
+> **Vercel:** set the `VITE_SUPABASE_*` vars (frontend) and `GEMINI_API_KEY` + `SUPABASE_*` vars (backend) in the project's environment settings.
 
-The backend ships with a `pytest` suite (offline — no real Gemini or Supabase
-calls) that focuses on the LLM boundary: schema enforcement, regression tests
-over a golden set of recorded model outputs, and full API-pipeline tests with
-the AI mocked.
+---
+
+## 🧪 Testing
+
+The backend ships with an offline `pytest` suite (no real Gemini or Supabase calls) focused on the LLM boundary — schema enforcement, golden-set regression over recorded model outputs, and full API-pipeline tests with the AI mocked.
 
 ```powershell
 cd backend
@@ -118,20 +130,17 @@ pytest --cov=app --cov=main --cov-report=term-missing
 
 What's covered:
 
-- **Schema enforcement** ([`tests/test_schemas.py`](backend/tests/test_schemas.py)) — proves the `AnalysisResponse` Pydantic contract rejects malformed model output (non-list fields, out-of-range scores, missing evidence) instead of passing it downstream.
-- **Golden-set regression** ([`tests/test_golden_regression.py`](backend/tests/test_golden_regression.py)) — replays recorded Gemini responses for real resume + job-description pairs through the live `run_analysis` pipeline and asserts the structured contract and per-case expectations still hold.
-- **Gemini service** ([`tests/test_gemini_service.py`](backend/tests/test_gemini_service.py)) — the network boundary is mocked; verifies the Pydantic schema is wired in as `response_schema`, the parsed/raw-JSON paths, and token accounting.
-- **API pipeline** ([`tests/test_analyze_endpoint.py`](backend/tests/test_analyze_endpoint.py), [`tests/test_analyze_authenticated.py`](backend/tests/test_analyze_authenticated.py)) — FastAPI `TestClient` exercises validation, error mapping (500/502/429/401), quota enforcement, and the signed-in persistence path.
-- **RAG / vector search** ([`tests/test_embedding_service.py`](backend/tests/test_embedding_service.py), [`tests/test_retrieval_service.py`](backend/tests/test_retrieval_service.py), [`tests/test_skill_coach.py`](backend/tests/test_skill_coach.py)) — embeddings, the pgvector RPC payload, gap de-duplication, the citation guard (advice citing an unretrieved card is dropped), and the honest ungrounded fallback — all with Gemini and Postgres mocked.
+*   **Schema enforcement** ([`tests/test_schemas.py`](backend/tests/test_schemas.py)) — proves the `AnalysisResponse` contract rejects malformed model output instead of passing it downstream.
+*   **Golden-set regression** ([`tests/test_golden_regression.py`](backend/tests/test_golden_regression.py)) — replays recorded Gemini responses through the live `run_analysis` pipeline.
+*   **Gemini service** ([`tests/test_gemini_service.py`](backend/tests/test_gemini_service.py)) — network boundary mocked; verifies the schema is wired in as `response_schema` and token accounting.
+*   **API pipeline** ([`tests/test_analyze_endpoint.py`](backend/tests/test_analyze_endpoint.py), [`tests/test_analyze_authenticated.py`](backend/tests/test_analyze_authenticated.py)) — validation, error mapping (500/502/429/401), quota enforcement, and the signed-in persistence path.
+*   **RAG / vector search** ([`tests/test_embedding_service.py`](backend/tests/test_embedding_service.py), [`tests/test_retrieval_service.py`](backend/tests/test_retrieval_service.py), [`tests/test_skill_coach.py`](backend/tests/test_skill_coach.py)) — embeddings, the pgvector RPC payload, the citation guard, and the honest ungrounded fallback.
 
 Current coverage: **96%** across `app/` and `main.py`.
 
 ### Evaluating model quality
 
-The pytest suite mocks Gemini, so it checks the *pipeline*, not the *model*. To
-measure how well the live model actually performs, run the evaluation harness
-([`eval/run.py`](backend/eval/run.py)) over a labelled dataset of ~15 resume +
-job-description pairs ([`eval/dataset.json`](backend/eval/dataset.json)):
+The pytest suite mocks Gemini, so it checks the *pipeline*, not the *model*. To measure how the live model actually performs, run the evaluation harness over a labelled dataset of ~15 resume + job-description pairs:
 
 ```powershell
 cd backend
@@ -139,28 +148,22 @@ python -m eval.run            # all cases
 python -m eval.run --limit 5  # quick sample
 ```
 
-It calls the real Gemini API and reports:
+It calls the real Gemini API and reports schema-validity, structural-compliance, skill-gap hit-rate, and score calibration. It runs cases sequentially with a delay and retries on rate limits, so it stays within the Gemini **free tier** (~15 calls per full run).
 
-- **Schema-validity rate** — share of runs that parsed into the contract.
-- **Structural-compliance rate** — share obeying the contract (top-3 matches with evidence, 3–5 gaps, in-range score).
-- **Skill-gap hit-rate** — of the gaps each resume is *known* to be missing, how many the model surfaced (extraction quality).
-- **Score-in-band rate** and **average match score** as calibration sanity checks.
+---
 
-It runs cases sequentially with a delay (`--delay`, default 5s) and retries on
-rate-limit errors, so it stays comfortably within the Gemini **free tier** —
-~15 calls per full run. The scoring logic itself is unit-tested offline in
-[`tests/test_eval_harness.py`](backend/tests/test_eval_harness.py).
+## 📖 Usage
 
-## Usage
+1.  Sign in (or **Continue as guest** — fully functional, nothing saved).
+2.  Pick a **mode** (Anschreiben or Email Outreach) and a **language** (EN / DE) in the header.
+3.  Paste your resume (top-left) and the job description (bottom-left) — signed-in users can **Save** either to their vault.
+4.  Hit **Run Alignment Analysis**.
+5.  Review the **Semantic Analysis** tab (top matches, crucial gaps), then refine the result in the **Draft Editor** tab.
+6.  Browse **History**, **Resumes**, **Jobs**, and **Insights** from the header nav.
 
-1. Sign in (or **Continue as guest** — fully functional, nothing saved).
-2. Pick a **mode** (Anschreiben — strict one-page cover letter, or Email Outreach — sub-200-word cold email) and a **language** (EN / DE) in the header.
-3. Paste your resume (top-left) and the job description (bottom-left) — signed-in users can **Save** either to their vault.
-4. Hit **Run Alignment Analysis**.
-5. Review the **Semantic Analysis** tab (top-3 matching skills, crucial gaps), then refine the result in the **Draft Editor** tab — you stay in the loop; nothing ships without your edit.
-6. Browse **History**, **Resumes**, **Jobs**, and **Insights** from the header nav.
+---
 
-## API
+## 🔌 API
 
 `POST /api/analyze` — optional `Authorization: Bearer <supabase-access-token>` header.
 
@@ -186,4 +189,4 @@ Returns `{ "matching_skills": [...], "skill_gaps": [...], "generated_draft": "..
 }
 ```
 
-Each gap is embedded and matched against the pgvector knowledge base; the retrieved cards ground a Gemini call that returns `{ "summary": "...", "items": [{ "gap": "...", "guidance": "...", "source_slug": "..." }], "sources": [{ "slug": "...", "name": "...", "similarity": 0.82, ... }], "grounded": true }`. When the knowledge base is not configured, it responds with `grounded: false` and an empty plan rather than inventing advice.
+Each gap is embedded and matched against the pgvector knowledge base; the retrieved cards ground a Gemini call that returns `{ "summary": "...", "items": [{ "gap": "...", "guidance": "...", "source_slug": "..." }], "sources": [...], "grounded": true }`. When the knowledge base isn't configured, it responds with `grounded: false` and an empty plan rather than inventing advice.
