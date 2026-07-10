@@ -1,8 +1,9 @@
-import type { AnalysisResult, Language, OutputTab } from "../types";
+import type { AnalysisResult, Language, Mode, OutputTab } from "../types";
 import SkillCoach from "./SkillCoach";
 
 interface OutputPanelProps {
   language: Language;
+  mode: Mode;
   result: AnalysisResult | null;
   draft: string;
   onDraftChange: (value: string) => void;
@@ -29,6 +30,9 @@ const STRINGS: Record<
     gapsShort: string;
     draftEmpty: string;
     words: string;
+    coverLetter: string;
+    email: string;
+    targetHint: string;
   }
 > = {
   en: {
@@ -45,6 +49,9 @@ const STRINGS: Record<
     gapsShort: "gaps",
     draftEmpty: "Your generated draft will appear here, ready to edit.",
     words: "words",
+    coverLetter: "Cover letter",
+    email: "Email",
+    targetHint: "What you're generating",
   },
   de: {
     analysisTab: "Semantische Analyse",
@@ -60,6 +67,9 @@ const STRINGS: Record<
     gapsShort: "Lücken",
     draftEmpty: "Ihr generierter Entwurf erscheint hier und kann direkt bearbeitet werden.",
     words: "Wörter",
+    coverLetter: "Anschreiben",
+    email: "E-Mail",
+    targetHint: "Was Sie generieren",
   },
 };
 
@@ -138,8 +148,49 @@ function AnalysisSkeleton({ label }: { label: string }) {
   );
 }
 
+/** Small SVG flags — emoji flags render as bare letters on Windows, so we draw them.
+    Height-driven with w-auto so each flag keeps its own aspect ratio. */
+function Flag({ language, className = "h-3" }: { language: Language; className?: string }) {
+  const cls = `${className} w-auto rounded-[1.5px] ring-1 ring-black/10`;
+  if (language === "de") {
+    return (
+      <svg viewBox="0 0 5 3" className={cls} aria-hidden="true">
+        <rect width="5" height="1" y="0" fill="#000000" />
+        <rect width="5" height="1" y="1" fill="#DD0000" />
+        <rect width="5" height="1" y="2" fill="#FFCE00" />
+      </svg>
+    );
+  }
+  // English → Union Jack (simplified, reads correctly at icon size)
+  return (
+    <svg viewBox="0 0 60 30" className={cls} aria-hidden="true">
+      <rect width="60" height="30" fill="#012169" />
+      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#FFFFFF" strokeWidth="6" />
+      <path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" strokeWidth="3" />
+      <path d="M30,0 V30 M0,15 H60" stroke="#FFFFFF" strokeWidth="10" />
+      <path d="M30,0 V30 M0,15 H60" stroke="#C8102E" strokeWidth="6" />
+    </svg>
+  );
+}
+
+/** Cover-letter (document) or email (envelope) glyph — reused as the empty-state hero and in the chip. */
+function FormatIcon({ mode, className }: { mode: Mode; className?: string }) {
+  return mode === "anschreiben" ? (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" />
+    </svg>
+  ) : (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="M3 7l9 6 9-6" />
+    </svg>
+  );
+}
+
 export default function OutputPanel({
   language,
+  mode,
   result,
   draft,
   onDraftChange,
@@ -266,15 +317,24 @@ export default function OutputPanel({
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center px-8 text-center animate-fade-in">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-cobalt-50 text-cobalt mb-4" aria-hidden="true">
-                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="9" />
-                  <circle cx="12" cy="12" r="4.5" />
-                  <circle cx="12" cy="12" r="0.5" fill="currentColor" />
-                </svg>
+              <span className="flex h-24 w-24 items-center justify-center rounded-3xl bg-cobalt-50 text-cobalt mb-5" aria-hidden="true">
+                <FormatIcon mode={mode} className="h-12 w-12" />
               </span>
               <h3 className="text-sm font-semibold text-obsidian">{t.emptyTitle}</h3>
-              <p className="mt-1 max-w-xs text-sm leading-relaxed text-charcoal/50">{t.empty}</p>
+
+              {/* What you're about to generate — format + language, spelled out */}
+              <div className="mt-4 flex items-center gap-2.5" title={t.targetHint}>
+                <span className="inline-flex items-center gap-2 h-9 pl-2.5 pr-3.5 rounded-full border border-hairline bg-surface-sunken/60 text-sm font-semibold text-charcoal/80">
+                  <FormatIcon mode={mode} className="h-5 w-5 text-cobalt" />
+                  {mode === "anschreiben" ? t.coverLetter : t.email}
+                </span>
+                <span className="inline-flex items-center gap-2 h-9 px-3 rounded-full border border-hairline bg-surface-sunken/60 text-sm font-bold uppercase tracking-wide text-charcoal/80">
+                  <Flag language={language} className="h-5" />
+                  {language}
+                </span>
+              </div>
+
+              <p className="mt-3.5 max-w-xs text-sm leading-relaxed text-charcoal/50">{t.empty}</p>
             </div>
           )}
         </div>

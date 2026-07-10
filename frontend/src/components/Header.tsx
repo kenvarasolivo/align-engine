@@ -1,12 +1,10 @@
 import { LogoMark } from "./Logo";
 import ThemeToggle from "./ThemeToggle";
-import type { Language, Mode, UsageInfo, View } from "../types";
+import type { Language, UsageInfo, View } from "../types";
 
 interface HeaderProps {
   view: View;
   onViewChange: (view: View) => void;
-  mode: Mode;
-  onModeChange: (mode: Mode) => void;
   language: Language;
   onLanguageChange: (language: Language) => void;
   /** Null while browsing as guest. */
@@ -17,11 +15,6 @@ interface HeaderProps {
   /** Returns to the marketing landing page. */
   onLogoClick: () => void;
 }
-
-const MODES: { value: Mode; label: string }[] = [
-  { value: "anschreiben", label: "Anschreiben" },
-  { value: "email", label: "Email Outreach" },
-];
 
 const LANGUAGES: { value: Language; label: string }[] = [
   { value: "en", label: "EN" },
@@ -48,8 +41,6 @@ const NAV: Record<Language, { value: View; label: string }[]> = {
 export default function Header({
   view,
   onViewChange,
-  mode,
-  onModeChange,
   language,
   onLanguageChange,
   userEmail,
@@ -118,29 +109,13 @@ export default function Header({
           </span>
         )}
 
-        {/* Mode selector — only relevant in the workspace */}
-        {view === "workspace" && (
-          <div className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70" role="group">
-            {MODES.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => onModeChange(value)}
-                aria-pressed={mode === value}
-                className={`focus-ring whitespace-nowrap px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
-                  mode === value
-                    ? "bg-panel text-cobalt shadow-xs ring-1 ring-black/[0.04]"
-                    : "text-charcoal/60 hover:text-obsidian"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Language toggle */}
-        <div className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70" role="group">
+        {/* Interface-language toggle — also the global UI language.
+            The output language + format live in the workspace action bar. */}
+        <div
+          className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70"
+          role="group"
+          aria-label={language === "de" ? "Sprache der Oberfläche" : "Interface language"}
+        >
           {LANGUAGES.map(({ value, label }) => (
             <button
               key={value}

@@ -297,8 +297,6 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       <Header
         view={effectiveView}
         onViewChange={setView}
-        mode={mode}
-        onModeChange={setMode}
         language={language}
         onLanguageChange={setLanguage}
         userEmail={session?.user.email ?? null}
@@ -312,6 +310,9 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
         <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 p-3 lg:p-4 overflow-y-auto lg:overflow-hidden">
           <InputPanel
             language={language}
+            onLanguageChange={setLanguage}
+            mode={mode}
+            onModeChange={setMode}
             resumeText={resumeText}
             onResumeChange={setResumeText}
             resumeTitle={resumeTitle}
@@ -330,6 +331,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
           />
           <OutputPanel
             language={language}
+            mode={mode}
             result={result}
             draft={draft}
             onDraftChange={setDraft}

@@ -1,9 +1,12 @@
 import { useRef, useState } from "react";
-import type { DragEvent } from "react";
-import type { Language } from "../types";
+import type { DragEvent, ReactNode } from "react";
+import type { Language, Mode } from "../types";
 
 interface InputPanelProps {
   language: Language;
+  onLanguageChange: (language: Language) => void;
+  mode: Mode;
+  onModeChange: (mode: Mode) => void;
   resumeText: string;
   onResumeChange: (value: string) => void;
   resumeTitle: string;
@@ -37,7 +40,12 @@ const STRINGS: Record<
     jobPlaceholder: string;
     jobTitlePlaceholder: string;
     titleLabel: string;
-    analyze: string;
+    formatLabel: string;
+    langLabel: string;
+    coverLetterOpt: string;
+    emailOpt: string;
+    ctaAnschreiben: string;
+    ctaEmail: string;
     analyzing: string;
     upload: string;
     extracting: string;
@@ -58,7 +66,12 @@ const STRINGS: Record<
     jobPlaceholder: "Paste the job description here…",
     jobTitlePlaceholder: "e.g. Acme — Platform Engineer",
     titleLabel: "Title",
-    analyze: "Run Alignment Analysis",
+    formatLabel: "Format",
+    langLabel: "Output language",
+    coverLetterOpt: "Cover letter",
+    emailOpt: "Email",
+    ctaAnschreiben: "Generate cover letter",
+    ctaEmail: "Write outreach email",
     analyzing: "Analyzing…",
     upload: "Upload file",
     extracting: "Extracting…",
@@ -78,7 +91,12 @@ const STRINGS: Record<
     jobPlaceholder: "Stellenbeschreibung hier einfügen…",
     jobTitlePlaceholder: "z. B. Acme — Platform Engineer",
     titleLabel: "Titel",
-    analyze: "Analyse starten",
+    formatLabel: "Format",
+    langLabel: "Ausgabesprache",
+    coverLetterOpt: "Anschreiben",
+    emailOpt: "E-Mail",
+    ctaAnschreiben: "Anschreiben erstellen",
+    ctaEmail: "E-Mail schreiben",
     analyzing: "Analysiere…",
     upload: "Datei hochladen",
     extracting: "Wird extrahiert…",
@@ -170,8 +188,66 @@ function TitleField({
   );
 }
 
+const DOC_ICON = (
+  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z" />
+    <path d="M14 3v5h5M9 13h6M9 17h4" />
+  </svg>
+);
+
+const MAIL_ICON = (
+  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 7l9 6 9-6" />
+  </svg>
+);
+
+/** Icon + full-word segmented control used for the output Format / Language choices. */
+function Segmented<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string; icon?: ReactNode }[];
+  value: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <span className="label-caps">{label}</span>
+      <div
+        className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70"
+        role="group"
+        aria-label={label}
+      >
+        {options.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            onClick={() => onChange(opt.value)}
+            aria-pressed={value === opt.value}
+            className={`focus-ring inline-flex items-center gap-1.5 whitespace-nowrap px-2.5 py-1.5 text-sm font-medium rounded-md transition-all duration-150 ${
+              value === opt.value
+                ? "bg-panel text-cobalt shadow-xs ring-1 ring-black/[0.04]"
+                : "text-charcoal/60 hover:text-obsidian"
+            }`}
+          >
+            {opt.icon}
+            <span>{opt.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function InputPanel({
   language,
+  onLanguageChange,
+  mode,
+  onModeChange,
   resumeText,
   onResumeChange,
   resumeTitle,
@@ -404,8 +480,28 @@ export default function InputPanel({
         </div>
       </div>
 
-      {/* Action bar pinned to the bottom */}
+      {/* Action bar pinned to the bottom — output choices sit on the path to the CTA */}
       <div className="px-4 py-4 bg-surface/60 border-t border-hairline">
+        <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <Segmented
+            label={t.formatLabel}
+            value={mode}
+            onChange={onModeChange}
+            options={[
+              { value: "anschreiben", label: t.coverLetterOpt, icon: DOC_ICON },
+              { value: "email", label: t.emailOpt, icon: MAIL_ICON },
+            ]}
+          />
+          <Segmented
+            label={t.langLabel}
+            value={language}
+            onChange={onLanguageChange}
+            options={[
+              { value: "en", label: "English" },
+              { value: "de", label: "Deutsch" },
+            ]}
+          />
+        </div>
         {error && (
           <div
             className="mb-3 flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5 animate-fade-in"
@@ -443,7 +539,10 @@ export default function InputPanel({
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1M5.6 18.4l2.1-2.1m8.6-8.6l2.1-2.1" />
               </svg>
-              <span>{t.analyze}</span>
+              <span>{mode === "anschreiben" ? t.ctaAnschreiben : t.ctaEmail}</span>
+              <span className="ml-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-2xs font-bold uppercase tracking-wide">
+                {language}
+              </span>
             </>
           )}
         </button>
