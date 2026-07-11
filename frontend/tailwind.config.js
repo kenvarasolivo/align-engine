@@ -65,10 +65,11 @@ export default {
         "2xs": ["0.6875rem", { lineHeight: "1rem", letterSpacing: "0.01em" }],
       },
       boxShadow: {
-        // Elevation scale: xs (resting chrome) → card (panels) → lift (hover/overlay)
-        xs: "0 1px 2px 0 rgb(10 10 10 / 0.04)",
-        card: "0 1px 2px 0 rgb(10 10 10 / 0.04), 0 4px 16px -4px rgb(10 10 10 / 0.06)",
-        lift: "0 2px 4px -2px rgb(10 10 10 / 0.08), 0 12px 32px -8px rgb(10 10 10 / 0.12)",
+        // Elevation scale: xs (resting chrome) → card (panels) → lift (hover/overlay).
+        // Soft, diffuse ambient shadows so white panels float off the grey canvas (iOS look).
+        xs: "0 1px 2px 0 rgb(17 20 28 / 0.05)",
+        card: "0 1px 3px 0 rgb(17 20 28 / 0.05), 0 8px 24px -6px rgb(17 20 28 / 0.10)",
+        lift: "0 4px 10px -4px rgb(17 20 28 / 0.10), 0 22px 44px -12px rgb(17 20 28 / 0.18)",
         // Cobalt glow — reserved for the hero CTA
         cta: "0 1px 2px 0 rgb(0 82 255 / 0.32), 0 4px 14px -2px rgb(0 82 255 / 0.30)",
         "cta-lg": "0 2px 4px 0 rgb(0 82 255 / 0.28), 0 8px 24px -4px rgb(0 82 255 / 0.40)",

@@ -45,15 +45,20 @@
     --dot-color: #2c3048; /* ambient dot-grid texture — dim on dark */
   }
 
-  /* Light theme — the original ALIGN palette, opt-in via <html class="light"> */
+  /*
+   * Light theme — the DEFAULT palette. An "iPhone grey" system: the canvas is a
+   * soft neutral grey so the white panels float above it (iOS grouped-list
+   * look), lifted by the diffuse shadows in tailwind.config.js. Opt-in dark is
+   * the navy palette above.
+   */
   :root.light {
-    --surface: 250 250 250; /* #FAFAFA */
-    --surface-sunken: 244 244 245; /* #F4F4F5 */
-    --panel: 255 255 255; /* #FFFFFF */
+    --surface: 234 235 239; /* #EAEBEF — soft grey canvas */
+    --surface-sunken: 223 225 230; /* #DFE1E6 — wells, inset regions */
+    --panel: 255 255 255; /* #FFFFFF — white cards float on the grey */
     --obsidian: 10 10 10; /* #0A0A0A */
     --charcoal: 38 38 38; /* #262626 */
-    --hairline: 229 231 235; /* #E5E7EB */
-    --hairline-strong: 212 212 216; /* #D4D4D8 */
+    --hairline: 220 222 228; /* #DCDEE4 */
+    --hairline-strong: 200 203 211; /* #C8CBD3 */
 
     --cobalt: 0 82 255; /* #0052FF */
     --cobalt-hover: 0 70 219; /* #0046DB */
@@ -132,9 +137,9 @@
     @apply outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface;
   }
 
-  /* Elevated panel resting on the surface canvas */
+  /* Elevated panel floating on the grey canvas — rounded, iPhone-style corners */
   .card {
-    @apply rounded-xl border border-hairline bg-panel shadow-card;
+    @apply rounded-2xl border border-hairline bg-panel shadow-card;
   }
 
   /*
@@ -160,10 +165,10 @@
 
   /* Button language: primary (cobalt, one per region), secondary (bordered) */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-cobalt font-semibold text-white transition-all duration-150 outline-none hover:bg-cobalt-hover active:bg-cobalt-active focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-cobalt font-semibold text-white transition-all duration-150 outline-none hover:bg-cobalt-hover active:bg-cobalt-active focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-hairline bg-panel font-medium text-charcoal/75 shadow-xs transition-all duration-150 outline-none hover:border-hairline-strong hover:text-obsidian focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-hairline bg-panel font-medium text-charcoal/75 shadow-xs transition-all duration-150 outline-none hover:border-hairline-strong hover:text-obsidian focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40;
   }
 
   /* Shimmer skeleton for loading states */

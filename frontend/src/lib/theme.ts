@@ -1,21 +1,23 @@
 /**
- * Theme handling — dark navy is the default; light is opt-in.
+ * Theme handling — the light "iPhone grey" palette is the default; dark navy is
+ * opt-in.
  *
  * The active theme is reflected as a `light` class on <html> (dark = no class),
  * which flips the CSS-variable palette in index.css. The choice is persisted to
  * localStorage and applied pre-paint by an inline script in index.html so there
- * is no flash on reload.
+ * is no flash on reload. New visitors (no stored choice) land on light; a user
+ * who explicitly picked dark keeps dark.
  */
 export type Theme = "dark" | "light";
 
 export const THEME_STORAGE_KEY = "align-theme";
 
-/** Read the persisted theme, defaulting to dark. */
+/** Read the persisted theme, defaulting to light. Only an explicit "dark" opts out. */
 export function getStoredTheme(): Theme {
   try {
-    return localStorage.getItem(THEME_STORAGE_KEY) === "light" ? "light" : "dark";
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark" ? "dark" : "light";
   } catch {
-    return "dark";
+    return "light";
   }
 }
 
