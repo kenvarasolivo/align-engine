@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { ArrowRight, Clock, Menu, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { LogoMark } from "./Logo";
 import ThemeToggle from "./ThemeToggle";
@@ -38,6 +39,30 @@ function useReveal<T extends HTMLElement>() {
 
   return { ref, visible };
 }
+
+/** Live Aachen (Europe/Berlin) time as HH:MM — the "in London" clock, localised. */
+function useLocalTime() {
+  const format = () =>
+    new Intl.DateTimeFormat("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+      timeZone: "Europe/Berlin",
+    }).format(new Date());
+
+  const [time, setTime] = useState(format);
+  useEffect(() => {
+    const id = window.setInterval(() => setTime(format()), 15_000);
+    return () => window.clearInterval(id);
+  }, []);
+  return time;
+}
+
+const NAV_LINKS: { label: string; href: string }[] = [
+  { label: "Features", href: "#features" },
+  { label: "How it works", href: "#how" },
+  { label: "Contact", href: "mailto:kenvara.solivo@gmail.com" },
+];
 
 const FEATURES: { title: string; description: string; icon: ReactNode }[] = [
   {
@@ -119,6 +144,75 @@ const STEPS: { title: string; description: string }[] = [
 
 const MATCHED_SKILLS = ["Python", "React", "REST APIs", "PostgreSQL", "CI/CD"];
 const GAP_SKILLS = ["Kubernetes", "Terraform"];
+
+/** Starburst mark used on the hero feature badge. */
+const STARBURST_PATH =
+  "m19.6 66.5 19.7-11 .3-1-.3-.5h-1l-3.3-.2-11.2-.3L14 53l-9.5-.5-2.4-.5L0 49l.2-1.5 2-1.3 2.9.2 6.3.5 9.5.6 6.9.4L38 49.1h1.6l.2-.7-.5-.4-.4-.4L29 41l-10.6-7-5.6-4.1-3-2-1.5-2-.6-4.2 2.7-3 3.7.3.9.2 3.7 2.9 8 6.1L37 36l1.5 1.2.6-.4.1-.3-.7-1.1L33 25l-6-10.4-2.7-4.3-.7-2.6c-.3-1-.4-2-.4-3l3-4.2L28 0l4.2.6L33.8 2l2.6 6 4.1 9.3L47 29.9l2 3.8 1 3.4.3 1h.7v-.5l.5-7.2 1-8.7 1-11.2.3-3.2 1.6-3.8 3-2L61 2.6l2 2.9-.3 1.8-1.1 7.7L59 27.1l-1.5 8.2h.9l1-1.1 4.1-5.4 6.9-8.6 3-3.5L77 13l2.3-1.8h4.3l3.1 4.7-1.4 4.9-4.4 5.6-3.7 4.7-5.3 7.1-3.2 5.7.3.4h.7l12-2.6 6.4-1.1 7.6-1.3 3.5 1.6.4 1.6-1.4 3.4-8.2 2-9.6 2-14.3 3.3-.2.1.2.3 6.4.6 2.8.2h6.8l12.6 1 3.3 2 1.9 2.7-.3 2-5.1 2.6-6.8-1.6-16-3.8-5.4-1.3h-.8v.4l4.6 4.5 8.3 7.5L89 80.1l.5 2.4-1.3 2-1.4-.2-9.2-7-3.6-3-8-6.8h-.5v.7l1.8 2.7 9.8 14.7.5 4.5-.7 1.4-2.6 1-2.7-.6-5.8-8-6-9-4.7-8.2-.5.4-2.9 30.2-1.3 1.5-3 1.2-2.5-2-1.4-3 1.4-6.2 1.6-8 1.3-6.4 1.2-7.9.7-2.6v-.2H49L43 72l-9 12.3-7.2 7.6-1.7.7-3-1.5.3-2.8L24 86l10-12.8 6-7.9 4-4.6-.1-.5h-.3L17.2 77.4l-4.7.6-2-2 .2-3 1-1 8-5.5Z";
+
+/** Full-bleed looping video backdrop, with a soft scrim for text legibility. */
+function HeroBackdrop() {
+  return (
+    <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+        src="/assets/herobackground.mp4"
+      />
+      {/* Scrim — darkest at the top-left where the headline sits */}
+      <div className="absolute inset-0 bg-gradient-to-br from-surface/70 via-surface/20 to-transparent" />
+    </div>
+  );
+}
+
+/**
+ * Pill CTA with the Axion text-roll hover: the label is duplicated inside a
+ * clipped column that slides up 50% on hover while the arrow chip rotates.
+ */
+function RollCta({
+  label,
+  onClick,
+  variant = "cobalt",
+  className = "",
+}: {
+  label: string;
+  onClick: () => void;
+  variant?: "cobalt" | "invert";
+  className?: string;
+}) {
+  const surface =
+    variant === "cobalt"
+      ? "bg-cobalt text-white hover:bg-cobalt-hover"
+      : "bg-obsidian text-surface hover:opacity-90";
+  const arrowInk = variant === "cobalt" ? "text-cobalt" : "text-obsidian";
+  const ease = "cubic-bezier(0.25,0.1,0.25,1)";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`focus-ring group inline-flex items-center gap-3 rounded-full py-2 pl-5 pr-2 text-[13px] font-medium shadow-cta transition-colors duration-300 ${surface} ${className}`}
+    >
+      <span className="block h-[20px] overflow-hidden">
+        <span
+          className="flex flex-col transition-transform duration-500 group-hover:-translate-y-1/2"
+          style={{ transitionTimingFunction: ease }}
+        >
+          <span className="flex h-[20px] items-center">{label}</span>
+          <span className="flex h-[20px] items-center">{label}</span>
+        </span>
+      </span>
+      <span
+        className="flex h-7 w-7 items-center justify-center rounded-full bg-white transition-transform duration-500 group-hover:-rotate-45"
+        style={{ transitionTimingFunction: ease }}
+      >
+        <ArrowRight className={`h-3.5 w-3.5 ${arrowInk}`} strokeWidth={2.4} />
+      </span>
+    </button>
+  );
+}
 
 /** Abstract JSX mockup of the ALIGN workspace — stands in for a screenshot. */
 function ProductVisual() {
@@ -243,151 +337,304 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
   const { session, continueAsGuest, signOut } = useAuth();
   const isSignedIn = Boolean(session);
 
-  const [scrolled, setScrolled] = useState(() => window.scrollY > 8);
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const time = useLocalTime();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const features = useReveal<HTMLDivElement>();
   const steps = useReveal<HTMLDivElement>();
   const ctaBand = useReveal<HTMLDivElement>();
 
   const enterApp = () => navigate("/app");
-
-  const scrollToFeatures = () => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    document.getElementById("features")?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
-  };
+  const ctaLabel = isSignedIn ? "Open ALIGN" : "Try ALIGN";
 
   const handleGuest = () => {
     continueAsGuest();
     navigate("/app");
   };
 
+  const scrollToId = (href: string) => {
+    if (!href.startsWith("#")) {
+      window.location.href = href;
+      return;
+    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById(href.slice(1))?.scrollIntoView({ behavior: reduce ? "auto" : "smooth" });
+  };
+
   return (
     <div className="min-h-screen bg-surface">
-      {/* ── Sticky nav ─────────────────────────────────────────────── */}
-      <header
-        className={`fixed inset-x-0 top-0 z-40 transition-all duration-300 ease-out-quart ${
-          scrolled ? "border-b border-hairline bg-panel/85 shadow-xs backdrop-blur-md" : "border-b border-transparent"
-        }`}
-      >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <a
-            href="/"
-            onClick={(event) => {
-              event.preventDefault();
-              window.scrollTo({ top: 0 });
-            }}
-            className="focus-ring flex items-center gap-2.5 rounded-lg select-none"
-            aria-label="ALIGN home"
-          >
-            <LogoMark className="h-7 w-7" />
-            <span className="text-lg font-extrabold tracking-tight text-obsidian">ALIGN</span>
-          </a>
+      {/* ── Hero (full viewport) ───────────────────────────────────── */}
+      <section className="relative flex min-h-screen flex-col overflow-hidden bg-surface [min-height:100svh]">
+        <HeroBackdrop />
 
-          {isSignedIn ? (
-            <nav className="flex items-center gap-2" aria-label="Account">
-              <ThemeToggle />
+        {/* Pill navbar */}
+        <div className="relative z-20 mx-auto w-full max-w-[1440px] p-2 sm:p-3">
+          <nav className="flex items-center justify-between rounded-full border border-hairline bg-panel/80 p-[5px] shadow-card backdrop-blur-md">
+            {/* Left: brand + links */}
+            <div className="flex items-center gap-3 sm:gap-5">
+              <a
+                href="/"
+                onClick={(event) => {
+                  event.preventDefault();
+                  window.scrollTo({ top: 0 });
+                }}
+                className="focus-ring flex items-center gap-2 rounded-full pl-1.5 pr-1 select-none"
+                aria-label="ALIGN home"
+              >
+                <LogoMark className="h-8 w-8 sm:h-9 sm:w-9" />
+                <span className="text-base font-extrabold tracking-tight text-obsidian">ALIGN</span>
+              </a>
+              <div className="hidden items-center gap-6 md:flex">
+                {NAV_LINKS.map(({ label, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    onClick={(event) => {
+                      if (href.startsWith("#")) {
+                        event.preventDefault();
+                        scrollToId(href);
+                      }
+                    }}
+                    className="focus-ring rounded text-sm text-charcoal/80 transition-colors duration-300 hover:text-obsidian"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: status + clock + account */}
+            <div className="hidden items-center gap-2 md:flex">
+              <span className="hidden text-[13px] text-charcoal/55 lg:inline">
+                Tailoring applications for 2026
+              </span>
+              <span className="hidden items-center gap-1.5 text-[13px] text-charcoal/60 lg:flex">
+                <Clock className="h-3.5 w-3.5" strokeWidth={2} />
+                {time} in Aachen
+              </span>
+              <ThemeToggle className="h-9 w-9 rounded-full" />
+              {isSignedIn ? (
+                <button
+                  type="button"
+                  onClick={() => void signOut()}
+                  className="focus-ring rounded-full px-3 py-2 text-[13px] font-medium text-charcoal/75 transition-colors duration-200 hover:text-obsidian"
+                >
+                  Log out
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuth("signin")}
+                  className="focus-ring rounded-full px-3 py-2 text-[13px] font-medium text-charcoal/75 transition-colors duration-200 hover:text-obsidian"
+                >
+                  Log in
+                </button>
+              )}
+              <RollCta label={ctaLabel} onClick={enterApp} />
+            </div>
+
+            {/* Mobile toggle */}
+            <div className="flex items-center gap-1.5 md:hidden">
+              <ThemeToggle className="h-9 w-9 rounded-full" />
               <button
                 type="button"
-                onClick={() => void signOut()}
-                className="btn-secondary h-9 px-4 text-sm"
+                onClick={() => setMenuOpen(true)}
+                className="focus-ring inline-flex items-center gap-1.5 rounded-full bg-obsidian px-3.5 py-2 text-[13px] font-medium text-surface"
+                aria-label="Open menu"
               >
-                Log out
+                <Menu className="h-4 w-4" strokeWidth={2} />
+                Menu
               </button>
-            </nav>
-          ) : (
-            <nav className="flex items-center gap-2" aria-label="Account">
-              <ThemeToggle />
-              <button
-                type="button"
-                onClick={() => onOpenAuth("signin")}
-                className="btn-secondary h-9 px-4 text-sm"
-              >
-                Log in
-              </button>
-              <button
-                type="button"
-                onClick={() => onOpenAuth("signup")}
-                className="btn-primary h-9 px-4 text-sm"
-              >
-                Register
-              </button>
-            </nav>
-          )}
+            </div>
+          </nav>
         </div>
-      </header>
 
-      {/* ── Hero ───────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden px-4 pb-20 pt-32 sm:px-6 sm:pt-36">
-        {/* Ambient backdrop: dot grid kept clear of the headline + soft cobalt glow + slow drift.
-            The mask is transparent (no dots) around the centered hero text and fades the dots
-            back in toward the edges so the texture never competes with readability. */}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(var(--dot-color)_1px,transparent_1px)] [background-size:24px_24px] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_32%,transparent_28%,black_80%)] opacity-50"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[radial-gradient(ellipse_55%_45%_at_50%_-12%,rgb(0_82_255_/_0.12),transparent)]"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute left-[12%] top-[18%] h-72 w-72 rounded-full bg-cobalt/[0.06] blur-3xl motion-safe:animate-drift"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute right-[10%] top-[40%] h-80 w-80 rounded-full bg-cobalt-200/20 blur-3xl motion-safe:animate-drift [animation-delay:-8s]"
-        />
-
-        <div className="relative mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-extrabold leading-[1.08] tracking-tight text-obsidian sm:text-5xl lg:text-6xl animate-fade-in-up">
-            Tailor your application to any job —{" "}
-            <span className="bg-gradient-to-r from-cobalt to-[#3B82F6] bg-clip-text text-transparent">
-              in seconds
-            </span>
-          </h1>
-
-          <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-charcoal/65 sm:text-lg animate-fade-in-up [animation-delay:80ms]">
-            ALIGN reads a job description against your resume, shows exactly where you match and
-            where you don't, and drafts an editable cover letter or cold email in English or
-            German. You stay in the loop — nothing ships without your edit.
-          </p>
-
-          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row animate-fade-in-up [animation-delay:160ms]">
-            <button
-              type="button"
-              onClick={enterApp}
-              className="btn-primary h-12 px-8 text-base shadow-cta transition-all duration-200 ease-out-quart hover:-translate-y-px hover:shadow-cta-lg active:translate-y-0 active:shadow-cta"
+        {/* Hero content — pinned to the top-left of the viewport */}
+        <div className="relative z-20 flex flex-1 flex-col">
+          <div className="mx-auto w-full max-w-[1440px] px-5 pt-12 sm:px-8 sm:pt-16 lg:px-12 lg:pt-20">
+            <p className="mb-5 text-[13px] tracking-wide text-charcoal/70 sm:mb-8 sm:text-sm">
+              ALIGN · Professional alignment engine
+            </p>
+            <h1
+              className="font-semibold leading-[1.06] tracking-[-0.03em] text-obsidian"
+              style={{ fontSize: "clamp(1.6rem, 5vw, 3.4rem)" }}
             >
-              {isSignedIn ? "Open ALIGN" : "Try ALIGN"}
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </button>
-            {isSignedIn ? (
-              <button type="button" onClick={scrollToFeatures} className="btn-secondary h-12 px-7 text-base">
-                See features
-              </button>
-            ) : (
-              <button type="button" onClick={() => onOpenAuth("signup")} className="btn-secondary h-12 px-7 text-base">
-                Register
+              See where you match any job,
+              <br className="hidden sm:block" />
+              <span className="sm:hidden"> </span>
+              which skills you’re missing,
+              <br className="hidden sm:block" />
+              <span className="sm:hidden"> </span>
+              and how to{" "}
+              <span className="bg-gradient-to-r from-cobalt to-cobalt-hover bg-clip-text text-transparent">
+                close the gap.
+              </span>
+            </h1>
+            <p className="mt-6 max-w-xl text-sm leading-relaxed text-charcoal/65 sm:text-base">
+              A clear skill-alignment matrix, honest feedback on what’s missing, and an editable
+              cover letter or cold email in EN or DE when you’re ready — nothing ships without your
+              edit.
+            </p>
+
+            <div className="mt-8 flex flex-col items-start gap-4 sm:mt-10 sm:flex-row sm:items-center sm:gap-5">
+              <RollCta label={ctaLabel} onClick={enterApp} className="text-sm" />
+
+              {isSignedIn ? (
+                <button
+                  type="button"
+                  onClick={() => scrollToId("#features")}
+                  className="focus-ring rounded-full border border-hairline bg-panel/70 px-5 py-2.5 text-[13px] font-medium text-charcoal/80 shadow-xs backdrop-blur-sm transition-colors duration-200 hover:text-obsidian sm:text-sm"
+                >
+                  See features
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => onOpenAuth("signup")}
+                  className="focus-ring rounded-full border border-hairline bg-panel/70 px-5 py-2.5 text-[13px] font-medium text-charcoal/80 shadow-xs backdrop-blur-sm transition-colors duration-200 hover:text-obsidian sm:text-sm"
+                >
+                  Register
+                </button>
+              )}
+
+              {/* Feature badge — repurposed Axion "certified partner" pill */}
+              <div className="flex items-center gap-2 rounded-[6px] bg-panel/85 px-3 py-2 shadow-[0_2px_8px_rgba(0,0,0,0.08)] backdrop-blur-sm">
+                <svg viewBox="0 0 100 100" className="h-5 w-5 fill-current text-cobalt sm:h-6 sm:w-6" aria-hidden="true">
+                  <path d={STARBURST_PATH} />
+                </svg>
+                <span className="text-[13px] font-medium text-obsidian sm:text-sm">English &amp; German</span>
+                <span className="rounded bg-obsidian px-1.5 py-0.5 text-[10px] font-semibold text-surface sm:px-2 sm:text-[11px]">
+                  EN·DE
+                </span>
+              </div>
+            </div>
+
+            {!isSignedIn && (
+              <button
+                type="button"
+                onClick={handleGuest}
+                className="focus-ring mt-6 rounded-md px-1 text-[13px] font-medium text-charcoal/55 transition-colors duration-150 hover:text-cobalt"
+              >
+                Continue as guest — nothing is saved →
               </button>
             )}
           </div>
         </div>
+      </section>
 
-        {/* Product visual */}
-        <div className="relative mx-auto mt-16 max-w-4xl animate-fade-in-up [animation-delay:260ms]">
-          <ProductVisual />
+      {/* Mobile menu overlay */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <button
+            type="button"
+            aria-label="Close menu"
+            onClick={() => setMenuOpen(false)}
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+          />
+          <div
+            className="absolute inset-x-3 bottom-3 rounded-2xl border border-hairline bg-panel p-5 shadow-lift"
+            style={{ animation: "fade-in-up 350ms cubic-bezier(0.16,1,0.3,1) both" }}
+          >
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-[13px] text-charcoal/60">
+                <Clock className="h-3.5 w-3.5" strokeWidth={2} />
+                {time} in Aachen
+              </span>
+              <button
+                type="button"
+                onClick={() => setMenuOpen(false)}
+                className="focus-ring inline-flex h-9 w-9 items-center justify-center rounded-full bg-obsidian text-surface"
+                aria-label="Close menu"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </button>
+            </div>
+
+            <nav className="mt-6 flex flex-col gap-4">
+              {NAV_LINKS.map(({ label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  onClick={(event) => {
+                    if (href.startsWith("#")) {
+                      event.preventDefault();
+                      scrollToId(href);
+                    }
+                    setMenuOpen(false);
+                  }}
+                  className="text-2xl font-medium text-obsidian"
+                >
+                  {label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="mt-7 flex flex-col gap-2.5">
+              <RollCta
+                label={ctaLabel}
+                onClick={() => {
+                  setMenuOpen(false);
+                  enterApp();
+                }}
+                className="w-full justify-between"
+              />
+              {isSignedIn ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    void signOut();
+                  }}
+                  className="focus-ring rounded-full border border-hairline px-4 py-2.5 text-sm font-medium text-charcoal/80"
+                >
+                  Log out
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenAuth("signup");
+                    }}
+                    className="focus-ring rounded-full border border-hairline px-4 py-2.5 text-sm font-medium text-charcoal/80"
+                  >
+                    Register
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onOpenAuth("signin");
+                    }}
+                    className="focus-ring rounded-full px-4 py-2 text-sm font-medium text-charcoal/60"
+                  >
+                    Log in
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Product showcase ───────────────────────────────────────── */}
+      <section className="relative px-4 pb-10 pt-24 sm:px-6 sm:pb-14 sm:pt-32">
+        <div className="mx-auto max-w-4xl">
+          <p className="label-caps mb-7 text-center">A peek inside the workspace</p>
+          <div className="relative">
+            {/* Soft cobalt halo echoing the hero's accent */}
+            <div
+              aria-hidden="true"
+              className="absolute -inset-x-8 -top-8 bottom-8 -z-10 rounded-[2.5rem] bg-cobalt/10 blur-3xl"
+            />
+            <ProductVisual />
+          </div>
         </div>
       </section>
 
       {/* ── Features ───────────────────────────────────────────────── */}
-      <section id="features" className="scroll-mt-20 px-4 py-20 sm:px-6 sm:py-24">
+      <section id="features" className="scroll-mt-24 px-4 py-20 sm:px-6 sm:py-24">
         <div ref={features.ref} className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-2xl text-center">
             <p className="label-caps">Everything you need</p>
@@ -420,7 +667,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
       </section>
 
       {/* ── How it works ───────────────────────────────────────────── */}
-      <section className="border-y border-hairline bg-panel px-4 py-16 sm:px-6 sm:py-20">
+      <section id="how" className="scroll-mt-24 border-y border-hairline bg-panel px-4 py-16 sm:px-6 sm:py-20">
         <div ref={steps.ref} className="mx-auto max-w-5xl">
           <div className="text-center">
             <p className="label-caps">How it works</p>
@@ -470,7 +717,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
             aria-hidden="true"
             className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_-20%,rgb(0_82_255_/_0.10),transparent)]"
           />
-          <div className="relative">
+          <div className="relative flex flex-col items-center">
             <h2 className="text-2xl font-extrabold tracking-tight text-obsidian sm:text-3xl">
               Your next application, perfectly aligned.
             </h2>
@@ -478,13 +725,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
               Run your first analysis in under a minute — no setup required.
             </p>
             <div className="mt-8">
-              <button
-                type="button"
-                onClick={enterApp}
-                className="btn-primary h-12 px-8 text-base shadow-cta transition-all duration-200 ease-out-quart hover:-translate-y-px hover:shadow-cta-lg active:translate-y-0 active:shadow-cta"
-              >
-                {isSignedIn ? "Open ALIGN" : "Try ALIGN"}
-              </button>
+              <RollCta label={ctaLabel} onClick={enterApp} className="text-sm" />
             </div>
             {!isSignedIn && (
               <button
