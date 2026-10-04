@@ -1,4 +1,4 @@
-export type BlockKind = "sender" | "recipient" | "date" | "subject" | "body";
+export type BlockKind = "sender" | "recipient" | "date" | "subject" | "body" | "closing";
 export interface LetterBlock { text: string; kind: BlockKind }
 export interface LayoutLine { text: string; bold: boolean }
 export interface LayoutBlock extends LetterBlock { lines: LayoutLine[]; after: number }

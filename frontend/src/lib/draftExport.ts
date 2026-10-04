@@ -8,11 +8,25 @@ const CONTENT_WIDTH = PAGE.width - PAGE.left - PAGE.right;
 const CONTENT_HEIGHT = PAGE.height - PAGE.top - PAGE.bottom - 20; // Word pagination safety margin.
 const subjectPattern = /^(?:\*\*)?(?:Bewerbung\b|Application\b|Betreff\s*:|Subject\s*:)/i;
 const salutationPattern = /^(?:Sehr geehrt|Liebe[rs]?\b|Guten Tag\b|Dear\b|Hello\b|Hi\b|To whom)/i;
+const closingPattern = /^(?:Mit freundlichen Grüßen|Mit freundlichen Gruessen|Freundliche Grüße|Beste Grüße|Kind regards|Best regards|Yours sincerely|Yours faithfully|Sincerely)\b/i;
 const datePattern = /^(?:\[(?:Datum|Date)\]|(?:Datum|Date)\s*:|.*\b\d{1,2}[./]\d{1,2}[./]\d{2,4}\b|.*\b\d{4}-\d{2}-\d{2}\b|.*\b\d{1,2}\.?\s+(?:Januar|Februar|März|April|Mai|Juni|Juli|August|September|Oktober|November|Dezember|January|February|March|May|June|July|October|December)\s+\d{4}\b)/i;
 
 /** Interpret the plain-text structure requested by the generator; never infer personal details. */
 export function parseDraft(draft: string, mode: Mode): LetterBlock[] {
-  const texts = draft.replace(/\r\n?/g, "\n").trim().split(/\n[\t ]*\n+/).map(s => s.trim()).filter(Boolean);
+  const texts = draft.replace(/\r\n?/g, "\n").trim().split(/\n[\t ]*\n+/).flatMap(block => {
+    // Also recognize a subject or sign-off when the editor has only a single newline before it.
+    const parts: string[] = [];
+    let lines: string[] = [];
+    for (const line of block.split("\n")) {
+      if (lines.length && (subjectPattern.test(line.trim()) || closingPattern.test(line.trim()))) {
+        parts.push(lines.join("\n"));
+        lines = [];
+      }
+      lines.push(line);
+    }
+    if (lines.length) parts.push(lines.join("\n"));
+    return parts;
+  }).map(s => s.trim()).filter(Boolean);
   const subject = texts.findIndex(s => subjectPattern.test(s));
   const greeting = texts.findIndex(s => salutationPattern.test(s));
   const headerEnd = subject >= 0 ? subject : greeting;
@@ -22,6 +36,8 @@ export function parseDraft(draft: string, mode: Mode): LetterBlock[] {
     if (index === subject) {
       kind = "subject";
       text = text.replace(/^\*\*|\*\*$/g, "");
+    } else if (closingPattern.test(text)) {
+      kind = "closing";
     } else if (mode === "anschreiben" && (greeting < 0 || index < greeting) && datePattern.test(text) && !text.includes("\n")) {
       kind = "date";
     } else if (mode === "anschreiben" && headerEnd >= 0 && index < headerEnd) {
@@ -73,7 +89,11 @@ export function fitLetter(blocks: LetterBlock[], regular: PDFFont, bold: PDFFont
           return wrap(line, isBold ? bold : regular, fontSize).map(text => ({ text, bold: isBold }));
         });
         const gap = block.kind === "subject" ? 16 : block.kind === "sender" || block.kind === "recipient" ? 14 : 10;
-        return { ...block, lines, after: index === blocks.length - 1 ? 0 : compact ? gap * 0.65 : gap };
+        const next = blocks[index + 1];
+        // Keep a clear blank line before the subject and sign-off, even in compact layouts.
+        const sectionGap = next?.kind === "subject" || next?.kind === "closing";
+        const after = sectionGap ? Math.max(24, lineHeight * 1.5) : compact ? gap * 0.65 : gap;
+        return { ...block, lines, after: index === blocks.length - 1 ? 0 : after };
       });
       const height = layoutBlocks.reduce((sum, block) => sum + block.lines.length * lineHeight + block.after, 0);
       if (height <= CONTENT_HEIGHT) return { blocks: layoutBlocks, fontSize, lineHeight, height };
@@ -148,6 +168,16 @@ export async function makeWord(layout: LetterLayout, language: Language): Promis
 }
 
 export function exportFilename(layout: LetterLayout, mode: Mode, language: Language): string {
+  if (mode === "anschreiben") {
+    const firstLine = (kind: BlockKind) => layout.blocks.find(block => block.kind === kind)?.text.split("\n")[0];
+    const closing = layout.blocks.find(block => block.kind === "closing")?.text.split("\n").map(line => line.trim()).filter(Boolean);
+    const applicant = firstLine("sender") ?? (closing && closing.length > 1 ? closing[closing.length - 1] : undefined);
+    const cleanPart = (value: string | undefined) => {
+      if (!value || /\[.*\]/.test(value)) return "";
+      return value.replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").trim().replace(/\s+/g, "_").replace(/[._]+$/, "").slice(0, 60);
+    };
+    return ["Anschreiben", cleanPart(firstLine("recipient")), cleanPart(applicant)].filter(Boolean).join("_");
+  }
   const subject = layout.blocks.find(block => block.kind === "subject")?.text;
   const fallback = mode === "email" ? "Email" : language === "de" ? "Anschreiben" : "Cover letter";
   return (subject ?? fallback).replace(/[<>:"/\\|?*\u0000-\u001f]/g, "").replace(/\s+/g, " ").trim().slice(0, 100).replace(/[. ]+$/, "") || fallback;

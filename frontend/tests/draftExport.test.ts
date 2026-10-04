@@ -37,7 +37,7 @@ Erika Müller`;
 
 test("German letter roles preserve header, date, subject and sign-off", () => {
   const blocks = parseDraft(germanDraft.replace(/\n/g, "\r\n"), "anschreiben");
-  assert.deepEqual(blocks.map(b => b.kind), ["sender", "recipient", "date", "subject", "body", "body", "body", "body", "body"]);
+  assert.deepEqual(blocks.map(b => b.kind), ["sender", "recipient", "date", "subject", "body", "body", "body", "body", "closing"]);
   assert.equal(blocks.at(-1)?.text, "Mit freundlichen Grüßen\nErika Müller");
 });
 
@@ -97,4 +97,32 @@ test("empty drafts and unsupported glyphs fail explicitly", async () => {
 test("filename is safe on Windows and reflects the edited subject", async () => {
   const { layout } = await prepareLetter("Subject: Senior Developer / R&D?\n\nEdited draft", "email", fonts);
   assert.equal(exportFilename(layout, "email", "en"), "Subject Senior Developer R&D");
+});
+
+test("cover-letter filenames identify the company and applicant", async () => {
+  const { layout } = await prepareLetter(germanDraft, "anschreiben", fonts);
+  assert.equal(exportFilename(layout, "anschreiben", "de"), "Anschreiben_Beispiel_GmbH_Erika_Müller");
+  assert.equal(exportFilename(layout, "anschreiben", "en"), "Anschreiben_Beispiel_GmbH_Erika_Müller");
+  const fallback = await prepareLetter("Bewerbung als Entwickler\n\nSehr geehrte Damen und Herren,\n\nMein Text.\n\nMit freundlichen Grüßen\nErika Müller", "anschreiben", fonts);
+  assert.equal(exportFilename(fallback.layout, "anschreiben", "de"), "Anschreiben_Erika_Müller");
+});
+
+test("missing details and unsafe filename characters are handled cleanly", async () => {
+  const { layout } = await prepareLetter("[Name]\n[Adresse]\n\n[Company]\n\nBewerbung als Entwickler\n\nSehr geehrte Damen und Herren,\n\nMein Text.", "anschreiben", fonts);
+  assert.equal(exportFilename(layout, "anschreiben", "de"), "Anschreiben");
+  const named = await prepareLetter(germanDraft.replace("Beispiel GmbH", "Example / R&D: GmbH?"), "anschreiben", fonts);
+  assert.equal(exportFilename(named.layout, "anschreiben", "de"), "Anschreiben_Example_R&D_GmbH_Erika_Müller");
+});
+
+test("subject and sign-off have a clear gap even when input uses a single newline", async () => {
+  const draft = germanDraft.replace("Aachen, 04.10.2026\n\n", "").replace("50678 Köln\n\n", "50678 Köln\n").replace("Rückmeldung.\n\n", "Rückmeldung.\n");
+  const { layout } = await prepareLetter(draft, "anschreiben", fonts);
+  const subject = layout.blocks.findIndex(block => block.kind === "subject");
+  const closing = layout.blocks.findIndex(block => block.kind === "closing");
+  assert.ok(layout.blocks[subject - 1].after >= 24);
+  assert.ok(layout.blocks[closing - 1].after >= 24);
+  const compact = await prepareLetter(draft.replace("Mit freundlichen Grüßen", "Additional relevant experience. ".repeat(25) + "\n\nMit freundlichen Grüßen"), "anschreiben", fonts);
+  for (const [index, block] of compact.layout.blocks.entries()) {
+    if (block.kind === "subject" || block.kind === "closing") assert.ok(compact.layout.blocks[index - 1].after >= 24);
+  }
 });
