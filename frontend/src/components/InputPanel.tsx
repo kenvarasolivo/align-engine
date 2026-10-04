@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { DragEvent, ReactNode } from "react";
-import type { JobRow, Language, Mode, ResumeRow, WritingStyle } from "../types";
+import type { AIProvider, JobRow, Language, Mode, ResumeRow, UsageInfo, WritingStyle } from "../types";
 import * as db from "../lib/db";
 
 interface InputPanelProps {
+  provider: AIProvider;
+  onProviderChange: (provider: AIProvider) => void;
+  providerUsage: Record<AIProvider, UsageInfo | null>;
   language: Language;
   onLanguageChange: (language: Language) => void;
   mode: Mode;
@@ -227,7 +230,7 @@ function Segmented<T extends string>({
     <div className="flex flex-col gap-1.5">
       <span className="label-caps">{label}</span>
       <div
-        className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70"
+        className="flex w-fit items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70"
         role="group"
         aria-label={label}
       >
@@ -253,6 +256,9 @@ function Segmented<T extends string>({
 }
 
 export default function InputPanel({
+  provider,
+  onProviderChange,
+  providerUsage,
   language,
   onLanguageChange,
   mode,
@@ -551,6 +557,23 @@ export default function InputPanel({
 
       {/* Action bar pinned to the bottom — output choices sit on the path to the CTA */}
       <div className="shrink-0 px-4 py-4 bg-surface/60 border-t border-hairline">
+        <div className="mb-3.5">
+          <Segmented
+            label={language === "de" ? "KI-Modell" : "AI model"}
+            value={provider}
+            onChange={onProviderChange}
+            options={[
+              { value: "gemini", label: "Gemini" },
+              { value: "openai", label: "GPT-6 Luna" },
+            ]}
+          />
+          <p className="mt-1.5 text-xs text-charcoal/65" role="status">
+            {(["gemini", "openai"] as const).map((value, index) => {
+              const used = providerUsage[value];
+              return <span key={value}>{index > 0 ? " · " : ""}{value === "openai" ? "GPT-6 Luna" : "Gemini"}: {used ? `${used.used_today}/${used.daily_limit}` : language === "de" ? "20 pro Tag" : "20 per day"}</span>;
+            })}
+          </p>
+        </div>
         <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <Segmented
             label={t.formatLabel}
@@ -618,8 +641,8 @@ export default function InputPanel({
         {!resumeText.trim() && !jobDescriptionText.trim() && <button type="button" onClick={onUseExample} className="focus-ring mb-3 rounded-md text-sm font-medium text-cobalt">{language === "de" ? "Mit Beispieldaten ausprobieren" : "Try with example inputs"}</button>}
         <details className="mb-3 text-xs leading-relaxed text-charcoal/75">
           <summary className="focus-ring cursor-pointer rounded-md">{language === "de" ? "Was passiert mit meinen Daten?" : "What happens to my data?"}</summary>
-          <p className="mt-2">{language === "de" ? "Für Analyse und Lernplan werden Ihre Texte und optionalen Angaben an Google Gemini gesendet. Hochgeladene Dateien werden auf unserem Server in Text umgewandelt. Angemeldet werden Analysen im Supabase-Verlauf gespeichert; ungesendete Entwurfsänderungen bleiben bis zur Synchronisierung auf diesem Gerät. Gäste erhalten keinen gespeicherten Verlauf. Exportieren Sie Ihren Entwurf, um ihn zu behalten." : "Analysis and learning plans send your text and optional context to Google Gemini. Uploaded files are converted to text on our server. Signed-in analyses are saved in Supabase history; unsent draft edits stay on this device until synced. Guests have no saved history. Export your draft to keep it."}</p>
-          <p className="mt-2">{language === "de" ? "Tägliche Limits gelten für Generierungsversuche, auch bei Fehlern oder Abbruch, und werden um 00:00 UTC zurückgesetzt. Gäste teilen das Limit ihrer Netzwerkadresse; dafür speichern wir nur einen geschützten Hash." : "Daily limits count generation attempts, including failures or cancellations, and reset at 00:00 UTC. Guests share a limit by network address; only a keyed hash is stored for that counter."}</p>
+          <p className="mt-2">{language === "de" ? "Für Analyse und Lernplan werden Ihre Texte und optionalen Angaben je nach Servereinstellung an OpenAI oder Google Gemini gesendet. Die Suche nach Lernressourcen verwendet Google Gemini für Embeddings. Hochgeladene Dateien werden auf unserem Server in Text umgewandelt. Angemeldet werden Analysen im Supabase-Verlauf gespeichert; ungesendete Entwurfsänderungen bleiben bis zur Synchronisierung auf diesem Gerät. Gäste erhalten keinen gespeicherten Verlauf. Exportieren Sie Ihren Entwurf, um ihn zu behalten." : "Analysis and learning plans send your text and optional context to OpenAI or Google Gemini, depending on the server setting. Learning-resource retrieval uses Google Gemini embeddings. Uploaded files are converted to text on our server. Signed-in analyses are saved in Supabase history; unsent draft edits stay on this device until synced. Guests have no saved history. Export your draft to keep it."}</p>
+          <p className="mt-2">{language === "de" ? "Jedes KI-Modell hat ein eigenes Limit von 20 Versuchen pro Tag. Analyse und Lernplan teilen dieses Limit; Fehler und Abbruch zählen ebenfalls. Zurücksetzung um 00:00 UTC. Gäste teilen das Limit ihrer Netzwerkadresse; dafür speichern wir nur einen geschützten Hash." : "Each AI model has its own limit of 20 attempts per day, shared by analysis and learning plans. Failures and cancellations also count. Limits reset at 00:00 UTC. Guests share a limit by network address; only a keyed hash is stored for that counter."}</p>
         </details>
         <button
           type="button"

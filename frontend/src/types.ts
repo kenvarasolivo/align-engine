@@ -6,6 +6,7 @@ export type DraftDocument = JSONContent;
 export type Mode = "anschreiben" | "email";
 export type Language = "en" | "de";
 export type WritingStyle = "neutral" | "direct" | "friendly";
+export type AIProvider = "gemini" | "openai";
 export type OutputTab = "analysis" | "draft";
 export type View = "workspace" | "history" | "vault" | "jobs" | "insights";
 export type ApplicationStatus = "draft" | "applied" | "interviewing" | "offer" | "rejected" | "withdrawn";
@@ -24,6 +25,7 @@ export interface SkillMatch {
 
 /** Response of POST /api/analyze. */
 export interface AnalysisResult {
+  provider?: AIProvider;
   match_score: number;
   score_rationale: string;
   matching_skills: SkillMatch[];
@@ -67,6 +69,8 @@ export interface SkillPlanItem {
 
 /** Response of POST /api/skill-coach. */
 export interface SkillCoachResult {
+  provider?: AIProvider;
+  usage?: UsageInfo | null;
   summary: string;
   items: SkillPlanItem[];
   sources: RetrievedSkill[];

@@ -219,7 +219,7 @@ grant all on public.ai_daily_quotas to service_role;
 
 -- Preserve existing analysis usage when applying this migration.
 insert into public.ai_daily_quotas (subject_key, operation, day, used)
-select 'user:' || user_id::text, 'analyze', (created_at at time zone 'UTC')::date, count(*)::integer
+select 'user:' || user_id::text || ':gemini', 'analyze', (created_at at time zone 'UTC')::date, count(*)::integer
 from public.usage_log
 where created_at >= date_trunc('day', now() at time zone 'UTC') at time zone 'UTC'
 group by user_id, (created_at at time zone 'UTC')::date

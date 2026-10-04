@@ -1,11 +1,13 @@
 import { lazy, Suspense } from "react";
 import { useId } from "react";
-import type { AnalysisResult, DraftDocument, Language, Mode, OutputTab } from "../types";
+import type { AIProvider, AnalysisResult, DraftDocument, Language, Mode, OutputTab, UsageInfo } from "../types";
 import SkillCoach from "./SkillCoach";
 import type { SaveStatus } from "../lib/draftSaver";
 const RichDraftEditor = lazy(() => import("./RichDraftEditor"));
 
 interface OutputPanelProps {
+  provider?: AIProvider;
+  onUsage?: (provider: AIProvider, usage: UsageInfo) => void;
   language: Language;
   mode: Mode;
   result: AnalysisResult | null;
@@ -202,6 +204,8 @@ function FormatIcon({ mode, className }: { mode: Mode; className?: string }) {
 }
 
 export default function OutputPanel({
+  provider = "gemini",
+  onUsage,
   language,
   mode,
   result,
@@ -351,6 +355,8 @@ export default function OutputPanel({
                 <SkillCoach
                   gaps={result.skill_gaps}
                   language={resultLanguage}
+                  provider={provider}
+                  onUsage={onUsage}
                   interfaceLanguage={language}
                   analysisKey={analysisKey}
                   accessToken={accessToken}

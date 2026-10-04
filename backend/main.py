@@ -45,6 +45,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-AI-Used", "X-AI-Limit", "Retry-After"],
 )
 
 
@@ -59,6 +60,7 @@ async def health() -> dict:
         "engine": "ALIGN",
         "config": {
             "gemini": bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")),
+            "openai": bool(os.environ.get("OPENAI_API_KEY")),
             "supabase": supabase_service.is_configured(),
         },
     }
@@ -89,20 +91,27 @@ async def _resolve_user(authorization: str | None) -> str | None:
     return user_id
 
 
+@app.get("/ai-usage", response_model=dict[str, UsageInfo])
+async def ai_usage(request: Request, authorization: str | None = Header(None)) -> dict:
+    return await quota_service.snapshot(request, await _resolve_user(authorization))
+
+
 @app.post("/analyze", response_model=AnalyzeResult)
 async def analyze(payload: AnalyzeRequest, request: Request, authorization: str | None = Header(None)) -> AnalyzeResult:
     user_id = await _resolve_user(authorization)
 
     # Reserve before generation, atomically across production workers.
-    used_today, limit = await quota_service.reserve(request, user_id, "analyze")
+    used_today, limit = await quota_service.reserve(request, user_id, "analyze", payload.provider)
+    quota_headers = {"X-AI-Used": str(used_today), "X-AI-Limit": str(limit)}
 
     try:
         result, prompt_tokens, output_tokens = await run_analysis(payload)
     except RuntimeError as exc:
         # Configuration problems (e.g. missing API key) — actionable for the operator.
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=str(exc), headers=quota_headers) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Gemini analysis failed: {exc}") from exc
+        name = "OpenAI" if payload.provider == "openai" else "Gemini"
+        raise HTTPException(status_code=502, detail=f"{name} analysis failed: {exc}", headers=quota_headers) from exc
 
     analysis_id: str | None = None
     usage = UsageInfo(used_today=used_today, daily_limit=limit)
@@ -141,6 +150,7 @@ async def analyze(payload: AnalyzeRequest, request: Request, authorization: str 
     return AnalyzeResult(
         **result.model_dump(),
         analysis_id=analysis_id,
+        provider=payload.provider,
         usage=usage,
         prompt_tokens=prompt_tokens,
         output_tokens=output_tokens,
@@ -158,15 +168,18 @@ async def skill_coach(payload: SkillCoachRequest, request: Request, authorizatio
     knowledge base is not configured rather than hallucinating advice.
     """
     user_id = await _resolve_user(authorization)
-    await quota_service.reserve(request, user_id, "coach")
+    used_today, limit = await quota_service.reserve(request, user_id, "coach", payload.provider)
+    quota_headers = {"X-AI-Used": str(used_today), "X-AI-Limit": str(limit)}
     try:
-        return await coach_skill_gaps(
+        result = await coach_skill_gaps(
             payload.skill_gaps,
             payload.language,
             payload.resume_text,
             payload.job_description_text,
+            provider=payload.provider,
         )
+        return result.model_copy(update={"provider": payload.provider, "usage": UsageInfo(used_today=used_today, daily_limit=limit)})
     except RuntimeError as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        raise HTTPException(status_code=500, detail=str(exc), headers=quota_headers) from exc
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Skill coaching failed: {exc}") from exc
+        raise HTTPException(status_code=502, detail=f"Skill coaching failed: {exc}", headers=quota_headers) from exc

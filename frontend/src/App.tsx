@@ -14,8 +14,10 @@ import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import * as db from "./lib/db";
 import { DraftSaver, hasRecovery, readRecovery, storeRecovery, type SaveStatus } from "./lib/draftSaver";
 import { snapshotKey, type AnalysisSnapshot } from "./lib/analysisSnapshot";
+import { attemptUsage } from "./lib/aiUsage";
 import type {
   AnalysisResult,
+  AIProvider,
   AnalysisRow,
   DraftDocument,
   JobRow,
@@ -96,6 +98,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const [view, setView] = useState<View>("workspace");
   const [mode, setMode] = useState<Mode>("anschreiben");
   const [language, setLanguage] = useState<Language>("en");
+  const [provider, setProvider] = useState<AIProvider>("gemini");
   const [personalMotivation, setPersonalMotivation] = useState("");
   const [writingStyle, setWritingStyle] = useState<WritingStyle>("neutral");
 
@@ -122,7 +125,42 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const analysisRequest = useRef<AbortController | null>(null);
   const requestVersion = useRef(0);
   const [activeTab, setActiveTab] = useState<OutputTab>("analysis");
-  const [usage, setUsage] = useState<UsageInfo | null>(null);
+  const [providerUsage, setProviderUsage] = useState<Record<AIProvider, UsageInfo | null>>({ gemini: null, openai: null });
+  const usageDay = useRef(new Date().toISOString().slice(0, 10));
+  useEffect(() => {
+    setProviderUsage({ gemini: null, openai: null });
+    const controller = new AbortController();
+    const headers: Record<string, string> = {};
+    if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+    void fetch("/api/ai-usage", { headers, signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) return;
+        const values = await response.json();
+        if (!controller.signal.aborted && values.gemini && values.openai) {
+          setProviderUsage(previous => ({ gemini: previous.gemini ?? values.gemini, openai: previous.openai ?? values.openai }));
+        }
+      }).catch(() => {});
+    return () => controller.abort();
+  }, [session?.access_token]);
+  const recordUsage = (selected: AIProvider, value: UsageInfo) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const reset = usageDay.current !== today;
+    usageDay.current = today;
+    setProviderUsage(previous => ({
+      ...(reset ? { gemini: null, openai: null } : previous),
+      [selected]: { ...value, used_today: Math.max(reset ? 0 : previous[selected]?.used_today ?? 0, value.used_today) },
+    }));
+  };
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      const today = new Date().toISOString().slice(0, 10);
+      if (usageDay.current !== today) {
+        usageDay.current = today;
+        setProviderUsage({ gemini: null, openai: null });
+      }
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const resumeTextRef = useRef(resumeText);
   resumeTextRef.current = resumeText;
@@ -230,6 +268,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
           job_description_text: jobDescriptionText,
           mode,
           language,
+          provider,
           personal_motivation: personalMotivation.trim() || null,
           writing_style: writingStyle,
           // History title defaults to the job title; fall back to the job's first line.
@@ -238,6 +277,9 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
           job_description_id: activeJobId,
         }),
       });
+
+      const reservedUsage = attemptUsage(response);
+      if (reservedUsage && version === requestVersion.current) recordUsage(provider, reservedUsage);
 
       if (!response.ok) {
         const body = await response.json().catch(() => null);
@@ -254,7 +296,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       setDraftDocument(null);
       setDraftSaveError(false);
       setActiveTab("analysis");
-      if (data.usage) setUsage(data.usage);
+      if (data.usage) recordUsage(provider, data.usage);
     } catch (err) {
       if (version !== requestVersion.current || controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Unexpected error — please try again.");
@@ -367,7 +409,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setDraft("");
     setDraftDocument(null);
     setDraftSaveError(false);
-    setUsage(null);
+    setProviderUsage({ gemini: null, openai: null });
+    setProvider("gemini");
     setError(null);
     setActiveTab("analysis");
   };
@@ -395,7 +438,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
         onViewChange={async next => { if (next === view || await flushDraft()) setView(next); }}
         language={language}
         userEmail={session?.user.email ?? null}
-        usage={usage}
+        usage={providerUsage[provider]}
+        provider={provider}
         onSignOut={handleSignOut}
         onGoToLogin={exitGuest}
         onLogoClick={async () => { if (canReplaceGuestDraft() && await prepareToLeave()) { cancelAnalysis(); navigate("/"); } }}
@@ -412,6 +456,9 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       {effectiveView === "workspace" ? (
         <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 p-3 lg:p-4 overflow-y-auto lg:overflow-hidden">
           <InputPanel
+            provider={provider}
+            onProviderChange={value => { setProvider(value); setError(null); }}
+            providerUsage={providerUsage}
             language={language}
             onLanguageChange={setLanguage}
             mode={mode}
@@ -445,6 +492,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
             onUseJob={loadJob}
           />
           <OutputPanel
+            provider={provider}
+            onUsage={recordUsage}
             language={language}
             mode={resultSnapshot?.mode ?? mode}
             result={result}

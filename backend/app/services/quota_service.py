@@ -36,19 +36,25 @@ def guest_key(request: Request) -> str:
     return f"guest:{digest}"
 
 
-async def reserve(request: Request, user_id: str | None, operation: str) -> tuple[int, int]:
+async def reserve(request: Request, user_id: str | None, operation: str, provider: str = "gemini") -> tuple[int, int]:
     """Return (requests used, limit). Reservations count attempted generations.
 
     Counting before generation also bounds retries and upstream failures. A
     request reserves once even if the AI service performs a validation retry.
     """
     global _local_day
+    if provider not in {"gemini", "openai"} or operation not in {"analyze", "coach"}:
+        raise ValueError("Invalid AI quota bucket")
     if user_id:
         key = f"user:{user_id}"
-        limit = supabase_service.daily_limit() if operation == "analyze" else _limit("DAILY_COACH_LIMIT", 20)
+        limit = _limit("DAILY_AI_LIMIT", 20)
     else:
         key = guest_key(request)
-        limit = _limit("GUEST_DAILY_ANALYSIS_LIMIT" if operation == "analyze" else "GUEST_DAILY_COACH_LIMIT", 5)
+        limit = _limit("GUEST_DAILY_AI_LIMIT", 20)
+    key = f"{key}:{provider}"
+    # Both endpoints share the provider's pool. Keep the existing atomic RPC:
+    # its 'analyze' bucket now represents all generation attempts.
+    operation = "analyze"
     limit = max(1, limit)
     if supabase_service.is_configured():
         try:
@@ -72,9 +78,27 @@ async def reserve(request: Request, user_id: str | None, operation: str) -> tupl
             if used is not None:
                 _local_counts[bucket] = used
     if used is None:
-        label = "analysis" if operation == "analyze" else "learning plan"
-        hint = " Sign in for a higher limit." if not user_id else ""
+        label = "OpenAI GPT-6 Luna" if provider == "openai" else "Gemini"
         now = datetime.now(timezone.utc)
         retry_after = 86400 - (now.hour * 3600 + now.minute * 60 + now.second)
-        raise HTTPException(429, f"Daily {label} limit reached ({limit}/day). Resets at midnight UTC.{hint}", headers={"Retry-After": str(retry_after)})
+        raise HTTPException(429, f"Daily {label} limit reached ({limit}/day). Switch AI provider or wait until midnight UTC.", headers={"Retry-After": str(retry_after), "X-AI-Used": str(limit), "X-AI-Limit": str(limit)})
     return used, limit
+
+
+async def snapshot(request: Request, user_id: str | None) -> dict[str, dict[str, int]]:
+    """Read independent provider pools; never spend an attempt on refresh."""
+    key = f"user:{user_id}" if user_id else guest_key(request)
+    limit = _limit("DAILY_AI_LIMIT" if user_id else "GUEST_DAILY_AI_LIMIT", 20)
+    today = datetime.now(timezone.utc).date().isoformat()
+    if supabase_service.is_configured():
+        try:
+            counts = await supabase_service.provider_quota_counts(key, today)
+        except Exception as exc:
+            logger.exception("Could not read AI provider quotas")
+            raise HTTPException(503, "Usage limits are temporarily unavailable.") from exc
+    else:
+        if os.getenv("VERCEL") == "1" or os.getenv("ENVIRONMENT") == "production":
+            raise HTTPException(503, "Usage limits are temporarily unavailable.")
+        with _lock:
+            counts = {provider: _local_counts.get((f"{key}:{provider}", "analyze"), 0) if _local_day == today else 0 for provider in ("gemini", "openai")}
+    return {provider: {"used_today": counts.get(provider, 0), "daily_limit": limit} for provider in ("gemini", "openai")}

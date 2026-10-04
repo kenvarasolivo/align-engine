@@ -15,21 +15,23 @@ def request(address="203.0.113.1", headers=None):
 
 
 @pytest.mark.asyncio
-async def test_guest_limit_is_reserved_before_generation_and_separate_for_coach(monkeypatch):
-    monkeypatch.setenv("GUEST_DAILY_ANALYSIS_LIMIT", "2")
+async def test_guest_limit_is_shared_by_operations_and_separate_by_provider(monkeypatch):
+    monkeypatch.setenv("GUEST_DAILY_AI_LIMIT", "2")
     assert await quota.reserve(request(), None, "analyze") == (1, 2)
     assert await quota.reserve(request(), None, "analyze") == (2, 2)
     with pytest.raises(HTTPException) as caught:
         await quota.reserve(request(), None, "analyze")
     assert caught.value.status_code == 429
     assert int(caught.value.headers["Retry-After"]) > 0
-    assert await quota.reserve(request(), None, "coach") == (1, 5)
+    assert await quota.reserve(request(), None, "coach", "openai") == (1, 2)
+    with pytest.raises(HTTPException):
+        await quota.reserve(request(), None, "coach", "gemini")
     assert await quota.reserve(request("203.0.113.2"), None, "analyze") == (1, 2)
 
 
 @pytest.mark.asyncio
 async def test_concurrent_guest_requests_cannot_exceed_local_limit(monkeypatch):
-    monkeypatch.setenv("GUEST_DAILY_ANALYSIS_LIMIT", "3")
+    monkeypatch.setenv("GUEST_DAILY_AI_LIMIT", "3")
     results = await asyncio.gather(*(quota.reserve(request(), None, "analyze") for _ in range(15)), return_exceptions=True)
     assert sorted(result[0] for result in results if isinstance(result, tuple)) == [1, 2, 3]
     assert sum(isinstance(result, HTTPException) and result.status_code == 429 for result in results) == 12
@@ -48,7 +50,7 @@ def test_guest_identity_is_hashed_and_ignores_untrusted_forwarding(monkeypatch):
 async def test_configured_quota_uses_atomic_rpc_and_fails_closed():
     with patch.object(supabase_service, "is_configured", return_value=True), patch.object(supabase_service, "reserve_quota", AsyncMock(return_value=4)) as rpc:
         assert await quota.reserve(request(), "user-1", "coach") == (4, 20)
-        rpc.assert_awaited_once_with("user:user-1", "coach", 20)
+        rpc.assert_awaited_once_with("user:user-1:gemini", "analyze", 20)
     with patch.object(supabase_service, "is_configured", return_value=True), patch.object(supabase_service, "reserve_quota", AsyncMock(side_effect=Exception("DB unavailable"))):
         with pytest.raises(HTTPException) as caught:
             await quota.reserve(request(), "user-1", "analyze")
@@ -64,7 +66,7 @@ async def test_production_never_uses_process_local_counters(monkeypatch):
 
 
 def test_guest_limit_stops_model_even_after_failures(monkeypatch):
-    monkeypatch.setenv("GUEST_DAILY_ANALYSIS_LIMIT", "1")
+    monkeypatch.setenv("GUEST_DAILY_AI_LIMIT", "1")
     payload = {"resume_text": "Python", "job_description_text": "Python", "mode": "email", "language": "en"}
     with TestClient(main.app) as client, patch.object(main, "run_analysis", AsyncMock(side_effect=Exception("upstream failure"))) as model:
         assert client.post("/analyze", json=payload).status_code == 502
@@ -75,7 +77,7 @@ def test_guest_limit_stops_model_even_after_failures(monkeypatch):
 def test_coach_auth_and_quota_are_checked_before_retrieval():
     with TestClient(main.app) as client, patch.object(supabase_service, "is_configured", return_value=True), patch.object(supabase_service, "get_user_id", AsyncMock(return_value="user-1")), patch.object(supabase_service, "reserve_quota", AsyncMock(return_value=None)) as rpc, patch.object(main, "coach_skill_gaps", AsyncMock()) as coach:
         assert client.post("/skill-coach", json={"skill_gaps": ["Docker"]}, headers={"Authorization": "Bearer token"}).status_code == 429
-        rpc.assert_awaited_once_with("user:user-1", "coach", 20)
+        rpc.assert_awaited_once_with("user:user-1:gemini", "analyze", 20)
         coach.assert_not_called()
 
 
@@ -83,3 +85,63 @@ def test_authenticated_request_does_not_silently_become_guest():
     with TestClient(main.app) as client, patch.object(main, "run_analysis", AsyncMock(return_value=(make_valid_analysis(), 1, 2))) as model:
         assert client.post("/analyze", json={"resume_text": "Python", "job_description_text": "Python", "mode": "email", "language": "en"}, headers={"Authorization": "Bearer token"}).status_code == 503
         model.assert_not_called()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("user_id", [None, "user-1"])
+async def test_each_provider_has_twenty_attempts_shared_by_analysis_and_coach(user_id):
+    for provider in ("gemini", "openai"):
+        for attempt in range(1, 21):
+            operation = "analyze" if attempt % 2 else "coach"
+            assert await quota.reserve(request(), user_id, operation, provider) == (attempt, 20)
+        with pytest.raises(HTTPException) as caught:
+            await quota.reserve(request(), user_id, "analyze", provider)
+        assert caught.value.status_code == 429
+        assert caught.value.headers["X-AI-Used"] == "20"
+    assert await quota.reserve(request("203.0.113.2"), "other-user" if user_id else None, "analyze", "openai") == (1, 20)
+
+
+@pytest.mark.asyncio
+async def test_usage_snapshot_reads_both_pools_without_reserving():
+    await quota.reserve(request(), None, "analyze", "gemini")
+    await quota.reserve(request(), None, "coach", "openai")
+    await quota.reserve(request(), None, "analyze", "openai")
+    expected = {"gemini": {"used_today": 1, "daily_limit": 20}, "openai": {"used_today": 2, "daily_limit": 20}}
+    assert await quota.snapshot(request(), None) == expected
+    assert await quota.snapshot(request(), None) == expected
+
+
+def test_api_routes_selected_provider_and_updates_usage_on_failures():
+    payload = {"resume_text": "Python", "job_description_text": "Python", "mode": "email", "language": "en", "provider": "openai"}
+    with TestClient(main.app) as client, patch.object(main, "run_analysis", AsyncMock(side_effect=Exception("upstream failure"))) as model:
+        response = client.post("/analyze", json=payload)
+        assert response.status_code == 502
+        assert response.headers["X-AI-Used"] == "1"
+        assert "OpenAI analysis failed" in response.json()["detail"]
+        assert model.call_args.args[0].provider == "openai"
+        usage = client.get("/ai-usage").json()
+        assert usage["openai"]["used_today"] == 1
+        assert usage["gemini"]["used_today"] == 0
+        assert client.post("/analyze", json={**payload, "provider": "invalid"}).status_code == 422
+        assert model.await_count == 1
+
+
+def test_coach_request_routes_provider_and_returns_shared_usage():
+    from app.schemas import SkillCoachResponse
+    with TestClient(main.app) as client, patch.object(main, "coach_skill_gaps", AsyncMock(return_value=SkillCoachResponse(summary="Empty", items=[], sources=[], grounded=False))) as coach:
+        response = client.post("/skill-coach", json={"skill_gaps": ["Python"], "provider": "openai"})
+        assert response.status_code == 200
+        assert coach.call_args.kwargs["provider"] == "openai"
+        assert response.json()["provider"] == "openai"
+        assert response.json()["usage"] == {"used_today": 1, "daily_limit": 20}
+
+
+@pytest.mark.asyncio
+async def test_shared_db_uses_independent_provider_subjects_and_reads_counters():
+    with patch.object(supabase_service, "is_configured", return_value=True), \
+         patch.object(supabase_service, "reserve_quota", AsyncMock(return_value=1)) as reserve, \
+         patch.object(supabase_service, "provider_quota_counts", AsyncMock(return_value={"openai": 7})) as read:
+        assert await quota.reserve(request(), "user-1", "coach", "openai") == (1, 20)
+        reserve.assert_awaited_once_with("user:user-1:openai", "analyze", 20)
+        assert (await quota.snapshot(request(), "user-1"))["openai"]["used_today"] == 7
+        assert read.call_args.args[0] == "user:user-1"

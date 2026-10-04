@@ -12,6 +12,14 @@ from pydantic import BaseModel, Field
 Mode = Literal["anschreiben", "email"]
 Language = Literal["en", "de"]
 WritingStyle = Literal["neutral", "direct", "friendly"]
+AIProvider = Literal["gemini", "openai"]
+
+
+class UsageInfo(BaseModel):
+    """Selected provider's daily attempt counter."""
+
+    used_today: int
+    daily_limit: int
 
 
 class AnalyzeRequest(BaseModel):
@@ -21,6 +29,7 @@ class AnalyzeRequest(BaseModel):
     job_description_text: str = Field(..., min_length=1, description="Raw pasted job description text.")
     mode: Mode = Field(..., description="Workflow mode: 'anschreiben' (one-page cover letter) or 'email' (cold outreach).")
     language: Language = Field(..., description="Strict output locale: 'en' or 'de'.")
+    provider: AIProvider = "gemini"
     personal_motivation: Optional[str] = Field(None, max_length=2000, description="Optional personal interest or context for the draft, not evidence of qualifications.")
     writing_style: WritingStyle = Field("neutral", description="Draft wording: neutral, direct, or friendly; facts stay unchanged.")
     title: Optional[str] = Field(None, description="Editable label for the saved history row (defaults to the job title on the client).")
@@ -156,6 +165,7 @@ class SkillCoachRequest(BaseModel):
         description="The skill gaps to coach on — typically the skill_gaps from a prior /analyze run.",
     )
     language: Language = Field("en", description="Strict output locale: 'en' or 'de'.")
+    provider: AIProvider = "gemini"
     resume_text: Optional[str] = Field(
         None,
         description="The candidate's resume, so guidance can be tailored to their actual background.",
@@ -203,6 +213,8 @@ class SkillCoachPlan(BaseModel):
 
 class SkillCoachResponse(SkillCoachPlan):
     """API response for POST /skill-coach: the plan plus its retrieval sources."""
+    provider: AIProvider = "gemini"
+    usage: Optional[UsageInfo] = None
 
     sources: List[RetrievedSkill] = Field(
         default_factory=list,
@@ -214,13 +226,6 @@ class SkillCoachResponse(SkillCoachPlan):
     )
 
 
-class UsageInfo(BaseModel):
-    """Per-user quota snapshot returned alongside an analysis."""
-
-    used_today: int = Field(..., description="Runs consumed today (UTC), including this one.")
-    daily_limit: int = Field(..., description="Maximum runs allowed per day.")
-
-
 class AnalyzeResult(AnalysisResponse):
     """API response for POST /api/analyze.
 
@@ -230,6 +235,7 @@ class AnalyzeResult(AnalysisResponse):
     """
 
     analysis_id: Optional[str] = Field(None, description="History row id, when the user is signed in.")
+    provider: AIProvider = "gemini"
     usage: Optional[UsageInfo] = Field(None, description="Quota snapshot, when the user is signed in.")
     prompt_tokens: Optional[int] = Field(None, description="Gemini prompt token count for this run.")
     output_tokens: Optional[int] = Field(None, description="Gemini output token count for this run.")

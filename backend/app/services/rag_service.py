@@ -10,7 +10,6 @@ auditable rather than hallucinated.
 
 import json
 
-from google.genai import types
 
 from app.schemas import (
     RetrievedSkill,
@@ -19,8 +18,8 @@ from app.schemas import (
     SkillPlanItem,
     SkillResource,
 )
-from app.services.gemini_service import MODEL_ID as GEN_MODEL_ID
 from app.services.gemini_service import _get_client
+from app.services.generation_service import generate_structured
 from app.services.retrieval_service import retrieve_for_gaps
 
 _SYSTEM_INSTRUCTION = (
@@ -141,13 +140,13 @@ async def coach_skill_gaps(
     language: str = "en",
     resume_text: str | None = None,
     job_description_text: str | None = None,
+    provider: str | None = None,
 ) -> SkillCoachResponse:
     """Retrieve grounding cards for `gaps` and generate a grounded, tailored plan."""
     cards = await retrieve_for_gaps(gaps)
     if not cards:
         return _ungrounded(gaps)
 
-    client = _get_client()
     candidate_context = _candidate_context(resume_text, job_description_text)
     tailoring = (
         "Tailor each recommendation to the candidate's actual background and the target "
@@ -170,21 +169,11 @@ async def coach_skill_gaps(
     if candidate_context:
         prompt += f"\n\n{candidate_context}"
 
-    response = await client.aio.models.generate_content(
-        model=GEN_MODEL_ID,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=_SYSTEM_INSTRUCTION,
-            response_mime_type="application/json",
-            response_schema=SkillCoachPlan,
-            temperature=0.3,
-        ),
+    plan, _, _ = await generate_structured(
+        prompt, _SYSTEM_INSTRUCTION, SkillCoachPlan,
+        gemini_client=_get_client, temperature=0.3,
+        selected_provider=provider,
     )
-
-    if isinstance(response.parsed, SkillCoachPlan):
-        plan = response.parsed
-    else:
-        plan = SkillCoachPlan.model_validate_json(response.text)
 
     # Defend the citation contract: keep only the slugs that were actually
     # retrieved, and drop any item left with no real citation — so every

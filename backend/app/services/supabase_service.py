@@ -125,6 +125,18 @@ async def reserve_quota(subject_key: str, operation: str, limit: int) -> int | N
     return int(used) if used is not None else None
 
 
+async def provider_quota_counts(subject_key: str, day: str) -> dict[str, int]:
+    """Read both daily provider pools without reserving another attempt."""
+    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        response = await client.get(
+            f"{_supabase_url()}/rest/v1/ai_daily_quotas",
+            params={"select": "subject_key,used", "subject_key": f"in.({subject_key}:gemini,{subject_key}:openai)", "operation": "eq.analyze", "day": f"eq.{day}"},
+            headers=_service_headers(),
+        )
+    response.raise_for_status()
+    return {row["subject_key"].rsplit(":", 1)[1]: int(row["used"]) for row in response.json()}
+
+
 async def save_analysis(record: dict[str, Any]) -> Optional[str]:
     """Insert an analysis row and return its id."""
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:

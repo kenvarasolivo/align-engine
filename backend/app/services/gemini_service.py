@@ -1,9 +1,6 @@
-"""Gemini integration for ALIGN.
+"""Analysis prompts and validation for Gemini and OpenAI generation.
 
-Uses the official `google-genai` SDK with `gemini-2.5-flash` and Structured
-Outputs: the `AnalysisResponse` Pydantic model is passed straight into the
-generation config as `response_schema`, so the model is forced to return
-valid JSON matching our contract.
+The Gemini client remains shared with the embedding service.
 """
 
 import os
@@ -12,9 +9,9 @@ import unicodedata
 from functools import lru_cache
 
 from google import genai
-from google.genai import types
 
 from app.schemas import AnalysisResponse, AnalyzeRequest
+from app.services.generation_service import generate_structured
 
 MODEL_ID = "gemini-2.5-flash"
 
@@ -195,33 +192,23 @@ def _build_prompt(payload: AnalyzeRequest) -> str:
 
 
 async def run_analysis(payload: AnalyzeRequest) -> tuple[AnalysisResponse, int | None, int | None]:
-    """Run the alignment analysis via Gemini Structured Outputs.
+    """Run the alignment analysis via the configured provider with structured output.
 
     Returns the parsed result plus prompt/output token counts (None when the
     SDK does not report usage metadata) for usage tracking and cost estimates.
     """
-    client = _get_client()
-
     prompt = _build_prompt(payload)
     prompt_tokens = output_tokens = None
     for attempt in range(2):
-        response = await client.aio.models.generate_content(
-            model=MODEL_ID,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_INSTRUCTION,
-                response_mime_type="application/json",
-                response_schema=AnalysisResponse,
-                temperature=0.4,
-            ),
+        result, input_count, output_count = await generate_structured(
+            prompt, SYSTEM_INSTRUCTION, AnalysisResponse,
+            gemini_client=_get_client, temperature=0.4,
+            selected_provider=payload.provider,
         )
-        usage = response.usage_metadata
-        if usage:
-            if usage.prompt_token_count is not None:
-                prompt_tokens = (prompt_tokens or 0) + usage.prompt_token_count
-            if usage.candidates_token_count is not None:
-                output_tokens = (output_tokens or 0) + usage.candidates_token_count
-        result = response.parsed if isinstance(response.parsed, AnalysisResponse) else AnalysisResponse.model_validate_json(response.text)
+        if input_count is not None:
+            prompt_tokens = (prompt_tokens or 0) + input_count
+        if output_count is not None:
+            output_tokens = (output_tokens or 0) + output_count
         result = result.model_copy(deep=True)
         result.generated_draft = safe_recipient_defaults(result.generated_draft, payload.language)
         issues = quality_issues(result, payload)

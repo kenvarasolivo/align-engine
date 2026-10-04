@@ -38,7 +38,7 @@ def test_health(client):
     assert body["status"] == "ok"
     assert body["engine"] == "ALIGN"
     # Config booleans surface whether the backend can see its runtime config.
-    assert set(body["config"]) == {"gemini", "supabase"}
+    assert set(body["config"]) == {"gemini", "openai", "supabase"}
     assert all(isinstance(v, bool) for v in body["config"].values())
 
 
@@ -55,7 +55,7 @@ def test_analyze_returns_schema_valid_json(client):
     assert body["output_tokens"] == 200
     # Guest run -> no persistence metadata.
     assert body["analysis_id"] is None
-    assert body["usage"] == {"used_today": 1, "daily_limit": 5}
+    assert body["usage"] == {"used_today": 1, "daily_limit": 20}
 
 
 def test_analyze_rejects_invalid_payload(client):

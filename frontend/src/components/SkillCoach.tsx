@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Language, RetrievedSkill, SkillCoachResult } from "../types";
+import type { AIProvider, Language, RetrievedSkill, SkillCoachResult, UsageInfo } from "../types";
+import { attemptUsage } from "../lib/aiUsage";
 
 interface SkillCoachProps {
+  provider?: AIProvider;
+  onUsage?: (provider: AIProvider, usage: UsageInfo) => void;
   gaps: string[];
   language: Language;
   interfaceLanguage?: Language;
@@ -61,14 +64,14 @@ const STRINGS: Record<
 
 type Status = "idle" | "loading" | "done" | "error";
 
-export default function SkillCoach({ gaps, language, interfaceLanguage = language, resumeText, jobDescriptionText, analysisKey, accessToken }: SkillCoachProps) {
+export default function SkillCoach({ gaps, language, interfaceLanguage = language, resumeText, jobDescriptionText, analysisKey, accessToken, provider = "gemini", onUsage }: SkillCoachProps) {
   const t = STRINGS[interfaceLanguage];
   const [status, setStatus] = useState<Status>("idle");
   const [data, setData] = useState<SkillCoachResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const request = useRef<AbortController | null>(null);
-  const contextKey = JSON.stringify([analysisKey, gaps, language, resumeText, jobDescriptionText]);
+  const contextKey = JSON.stringify([analysisKey, gaps, language, resumeText, jobDescriptionText, provider]);
   const currentKey = useRef(contextKey);
   currentKey.current = contextKey;
   useEffect(() => {
@@ -101,15 +104,19 @@ export default function SkillCoach({ gaps, language, interfaceLanguage = languag
         body: JSON.stringify({
           skill_gaps: gaps,
           language,
+          provider,
           resume_text: resumeText || undefined,
           job_description_text: jobDescriptionText || undefined,
         }),
       });
+      const usage = attemptUsage(response);
+      if (usage && !controller.signal.aborted) onUsage?.(provider, usage);
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         throw new Error(body?.detail ?? `Request failed with status ${response.status}`);
       }
       const result: SkillCoachResult = await response.json();
+      if (result.usage && !controller.signal.aborted) onUsage?.(provider, result.usage);
       if (controller.signal.aborted || currentKey.current !== key) return;
       setData(result);
       setStatus("done");

@@ -14,6 +14,10 @@ from app.schemas import AnalysisResponse, SkillMatch
 def isolate_runtime(monkeypatch):
     """Tests never inherit real account keys or spend a network quota."""
     from app.services import quota_service
+    from app.services import generation_service
+    for key in ("OPENAI_API_KEY", "OPENAI_MODEL", "GEMINI_MODEL", "DAILY_AI_LIMIT", "GUEST_DAILY_AI_LIMIT"):
+        monkeypatch.delenv(key, raising=False)
+    generation_service._get_openai_client.cache_clear()
     for key in ("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "VERCEL", "ENVIRONMENT", "GUEST_DAILY_ANALYSIS_LIMIT", "GUEST_DAILY_COACH_LIMIT", "DAILY_COACH_LIMIT"):
         monkeypatch.delenv(key, raising=False)
     quota_service._local_counts.clear()

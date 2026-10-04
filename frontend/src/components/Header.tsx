@@ -1,6 +1,6 @@
 import { LogoMark } from "./Logo";
 import ThemeToggle from "./ThemeToggle";
-import type { Language, UsageInfo, View } from "../types";
+import type { AIProvider, Language, UsageInfo, View } from "../types";
 
 interface HeaderProps {
   view: View;
@@ -9,6 +9,7 @@ interface HeaderProps {
   /** Null while browsing as guest. */
   userEmail: string | null;
   usage: UsageInfo | null;
+  provider?: AIProvider;
   onSignOut: () => void;
   onGoToLogin: () => void;
   /** Returns to the marketing landing page. */
@@ -38,6 +39,7 @@ export default function Header({
   language,
   userEmail,
   usage,
+  provider = "gemini",
   onSignOut,
   onGoToLogin,
   onLogoClick,
@@ -86,7 +88,7 @@ export default function Header({
         {usage && (
           <span
             className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-full border border-hairline bg-panel shadow-xs"
-            title={language === "de" ? "Analyseversuche heute ? Zur?cksetzung um 00:00 UTC" : "Analysis attempts today ? resets at 00:00 UTC"}
+            title={language === "de" ? "KI-Versuche heute · Zurücksetzung um 00:00 UTC" : "AI attempts today · resets at 00:00 UTC"}
           >
             <span className="h-1.5 w-12 rounded-full bg-surface-sunken overflow-hidden" aria-hidden="true">
               <span
@@ -97,7 +99,7 @@ export default function Header({
               />
             </span>
             <span className="text-2xs font-semibold tabular-nums text-charcoal/70">
-              {usage.used_today}/{usage.daily_limit}
+              {provider === "openai" ? "GPT-6 Luna" : "Gemini"} {usage.used_today}/{usage.daily_limit}
             </span>
           </span>
         )}

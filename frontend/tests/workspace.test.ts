@@ -27,6 +27,48 @@ function pendingResponse() {
 const analysis = { match_score: 70, score_rationale: "Strong Python fit", matching_skills: [{ skill: "Python", evidence: "Built FastAPI services" }], skill_gaps: ["Kubernetes"], generated_draft: "Subject: Example role\n\nDear Hiring Team,\n\nI build Python services.\n\nBest,\nAlex", usage: { used_today: 1, daily_limit: 5 } };
 const plan = { summary: "Learn Kubernetes", items: [{ gap: "Kubernetes", guidance: "Build a small cluster", source_slugs: ["kubernetes"] }], sources: [], grounded: true };
 
+test("provider selection routes analysis and coaching and keeps independent usage", async t => {
+  const originalFetch = globalThis.fetch; const sent: Record<string, string>[] = [];
+  globalThis.fetch = async (_url, options) => {
+    if (!options?.method) return new Response(JSON.stringify({ gemini: { used_today: 20, daily_limit: 20 }, openai: { used_today: 3, daily_limit: 20 } }));
+    const payload = JSON.parse(String(options.body)); sent.push(payload);
+    return new Response(JSON.stringify(String(_url).includes("skill-coach")
+      ? { ...plan, provider: payload.provider, usage: { used_today: 5, daily_limit: 20 } }
+      : { ...analysis, provider: payload.provider, usage: { used_today: 4, daily_limit: 20 } }));
+  };
+  const root = createRoot(container); t.after(async () => { await act(async () => root.unmount()); globalThis.fetch = originalFetch; });
+  await act(async () => root.render(createElement(App)));
+  assert.match(container.textContent!, /Gemini: 20\/20/);
+  await click(button("GPT-6 Luna"));
+  assert.equal(button("GPT-6 Luna").getAttribute("aria-pressed"), "true");
+  await click(button("Try with example inputs"));
+  const generate = Array.from(container.querySelectorAll("button")).find(value => value.textContent?.includes("Generate cover letter"))!;
+  await click(generate);
+  assert.equal(sent[0].provider, "openai");
+  assert.match(container.textContent!, /GPT-6 Luna: 4\/20/);
+  assert.match(container.textContent!, /Gemini: 20\/20/);
+  await click(button("Generate learning plan"));
+  assert.equal(sent[1].provider, "openai");
+  assert.match(container.textContent!, /GPT-6 Luna: 5\/20/);
+});
+
+test("failed attempts update the requested provider when selection changes in flight", async t => {
+  const originalFetch = globalThis.fetch; const late = pendingResponse(); let sent: Record<string, string> = {};
+  globalThis.fetch = async (_url, options) => {
+    if (!options?.method) return new Response(JSON.stringify({ gemini: { used_today: 0, daily_limit: 20 }, openai: { used_today: 0, daily_limit: 20 } }));
+    sent = JSON.parse(String(options.body)); return late.promise;
+  };
+  const root = createRoot(container); t.after(async () => { await act(async () => root.unmount()); globalThis.fetch = originalFetch; });
+  await act(async () => root.render(createElement(App)));
+  await click(button("Try with example inputs"));
+  await click(Array.from(container.querySelectorAll("button")).find(value => value.textContent?.includes("Generate cover letter"))!);
+  await click(button("GPT-6 Luna"));
+  await act(async () => late.resolve(new Response(JSON.stringify({ detail: "Gemini unavailable" }), { status: 502, headers: { "X-AI-Used": "1", "X-AI-Limit": "20" } })));
+  assert.equal(sent.provider, "gemini");
+  assert.match(container.textContent!, /Gemini: 1\/20/);
+  assert.match(container.textContent!, /GPT-6 Luna: 0\/20/);
+});
+
 test("recovery survives reload, stays account-scoped, and tolerates damaged storage", () => {
   storeRecovery("user-one", { id: "analysis-one", text: "unsent edit", document: null }, false);
   assert.equal(hasRecovery("user-one"), true);
@@ -40,7 +82,7 @@ test("recovery survives reload, stays account-scoped, and tolerates damaged stor
 
 test("example inputs enable generation, expose privacy copy, and retain original output locale", async t => {
   const originalFetch = globalThis.fetch; const response = pendingResponse(); let payload: Record<string, string> = {};
-  globalThis.fetch = async (_url, options) => { payload = JSON.parse(String(options?.body)); return response.promise; };
+  globalThis.fetch = async (_url, options) => { if (!options?.method) return new Response(JSON.stringify({})); payload = JSON.parse(String(options?.body)); return response.promise; };
   const root = createRoot(container); t.after(async () => { await act(async () => root.unmount()); globalThis.fetch = originalFetch; });
   await act(async () => root.render(createElement(App)));
   assert.equal(container.querySelectorAll('[aria-label="Interface language"]').length, 0);
@@ -60,7 +102,7 @@ test("example inputs enable generation, expose privacy copy, and retain original
 
 test("cancelled analysis cannot overwrite the existing result even if its response arrives", async t => {
   const originalFetch = globalThis.fetch; const late = pendingResponse(); let requests = 0;
-  globalThis.fetch = async () => ++requests === 1 ? new Response(JSON.stringify(analysis)) : late.promise;
+  globalThis.fetch = async (_url, options) => !options?.method ? new Response(JSON.stringify({})) : ++requests === 1 ? new Response(JSON.stringify(analysis)) : late.promise;
   const root = createRoot(container); t.after(async () => { await act(async () => root.unmount()); globalThis.fetch = originalFetch; });
   await act(async () => root.render(createElement(App)));
   await click(button("Try with example inputs"));

@@ -12,7 +12,7 @@ ALIGN reads a job description against your resume, shows exactly where you match
 *   **Editable drafts:** One-page Anschreiben (strict cover letter) or sub-200-word cold email, in **English or German**. You refine every result in the Draft Editor before it goes anywhere.
 *   **Draft preferences:** Choose Neutral (default), Direct, or Friendly wording and optionally add personal motivation. Preferences are restored from saved history for regeneration. Letters have a 270-word body ceiling without a forced minimum; the existing export layout and rich-text pagination remain unchanged.
 *   **PDF and Word downloads:** Preview and export the current edited draft as a one-page A4 PDF or editable `.docx`. Cover letters use a right-aligned sender and date, a left-aligned recipient, a bold subject, and extra space before the subject and sign-off. Filenames follow `Anschreiben_Company_Applicant`, using names from the draft and omitting missing details. The layout adjusts spacing and font size (10–11.5 pt) to fit; drafts that exceed a readable single page must be shortened before downloading. Exports run in the browser, including for guests.
-*   **Skill Coach (RAG):** Turns each skill gap into a grounded upskilling plan. Gaps are embedded and matched against a curated knowledge base in **pgvector** (cosine KNN); Gemini writes advice drawn *only* from the retrieved cards and cites its source — auditable, not hallucinated.
+*   **Skill Coach (RAG):** Turns each skill gap into a grounded upskilling plan. Gaps are embedded and matched against a curated knowledge base in **pgvector** (cosine KNN); The selected AI provider writes advice drawn *only* from the retrieved cards and cites its source — auditable, not hallucinated.
 *   **Accounts (optional):** Email/password login via Supabase Auth. Guests can analyze and export without saved application history; signed-in users get history, a resume vault, saved jobs, and insights. Guest quota counters store only a keyed hash of the network address, never application content.
 *   **History, vault & insights:** Every run is snapshotted and reloadable; resumes and jobs are reusable; insights aggregate your most-matched skills vs. recurring gaps, plus token usage and estimated cost.
 *   **Quota & usage tracking:** Atomic daily reservations cap analysis and coaching attempts independently before any AI call. Defaults: 20 analyses and 20 learning plans per signed-in user; 5 of each per guest network address. Limits reset at midnight UTC. Failures and cancellations count as attempts; a validation retry stays within the same reservation. The append-only usage log continues to record successful signed-in analyses for cost estimates.
@@ -24,7 +24,7 @@ ALIGN reads a job description against your resume, shows exactly where you match
 ## 🛠️ Tech Stack
 
 *   **Frontend:** React 18 + Vite + Tailwind CSS — viewport-locked 50/50 split workspace, dark/light mode, talks to Supabase directly under RLS.
-*   **Backend:** FastAPI + the official `google-genai` SDK (`gemini-2.5-flash`) with Structured Outputs; verifies Supabase JWTs, enforces quotas, and serves the RAG Skill Coach.
+*   **Backend:** FastAPI + the official `google-genai` and `openai` SDKs with Structured Outputs; verifies Supabase JWTs, enforces quotas, and serves the RAG Skill Coach.
 *   **Data & Auth:** Supabase (Postgres + Auth + Row-Level Security) with the **pgvector** extension for the skill knowledge base.
 *   **AI:** Google Gemini — `gemini-2.5-flash` for analysis/drafting, `gemini-embedding-001` (768-dim) for retrieval.
 *   **Deployment:** Vercel.
@@ -44,7 +44,7 @@ node -v
 python --version
 ```
 
-*   A free **Supabase** project and a **Gemini API key**.
+*   A free **Supabase** project and an API key for your selected provider (**Gemini** or **OpenAI**). Skill Coach retrieval also requires a Gemini key.
 
 ### 1. Supabase (once)
 
@@ -59,7 +59,7 @@ Run [`supabase/migrations/20261004_draft_preferences.sql`](supabase/migrations/2
 
 Run [`supabase/migrations/20261004_ai_quotas.sql`](supabase/migrations/20261004_ai_quotas.sql) **before deploying these backend changes**. It adds service-role-only atomic quota reservations and seeds today's existing analysis usage. It is safe to rerun. Fresh installations include it in `schema.sql`. Without this migration, a configured backend returns an actionable temporary-unavailable response rather than allowing unbounded AI calls.
 
-Optional quota settings: `DAILY_COACH_LIMIT=20`, `GUEST_DAILY_ANALYSIS_LIMIT=5`, `GUEST_DAILY_COACH_LIMIT=5`. `QUOTA_HASH_SECRET` can supply a dedicated stable hash secret; otherwise the backend uses the service-role key. On Vercel, guest identity uses the platform's [`x-vercel-forwarded-for`](https://vercel.com/docs/headers/request-headers#x-vercel-forwarded-for) header. Other hosts use the request's client address; configure trusted proxy forwarding at the server layer and set `ENVIRONMENT=production`. Production requires Supabase-backed shared counters; only guest-only local development without Supabase uses process-local counters.
+Each provider has an independent daily pool of 20 attempts, shared by analysis and learning plans. Failures and cancellations count; pools reset at midnight UTC. Signed-in pools are per user; guest pools are per network address. Optional settings: `DAILY_AI_LIMIT=20`, `GUEST_DAILY_AI_LIMIT=20`. Apply `supabase/migrations/20261004_provider_quotas.sql` when upgrading to preserve previous attempts in the Gemini pool; the existing atomic RPC is reused. `QUOTA_HASH_SECRET` can supply a dedicated stable hash secret; otherwise the backend uses the service-role key. On Vercel, guest identity uses the platform's [`x-vercel-forwarded-for`](https://vercel.com/docs/headers/request-headers#x-vercel-forwarded-for) header. Other hosts use the request's client address; configure trusted proxy forwarding at the server layer and set `ENVIRONMENT=production`. Production requires Supabase-backed shared counters; only guest-only local development without Supabase uses process-local counters.
 
 ### 2. Backend (FastAPI)
 
@@ -74,11 +74,19 @@ Create `backend/.env` (see [`backend/.env.example`](backend/.env.example)):
 
 ```
 GEMINI_API_KEY=...
+GEMINI_MODEL=gemini-2.5-flash
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-6-luna
 SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_ANON_KEY=...
 SUPABASE_SERVICE_ROLE_KEY=...
-DAILY_ANALYSIS_LIMIT=20
+DAILY_AI_LIMIT=20
+GUEST_DAILY_AI_LIMIT=20
 ```
+
+Users choose **Gemini** or **GPT-6 Luna** in the workspace's **AI model** selector. Each request carries the selected provider; concurrent users can choose independently. Configure both API keys and restart the backend. OpenAI requires API billing. Keys belong only in the backend environment. There is no automatic fallback between providers.
+
+Skill Coach retrieval and knowledge-base ingestion still use `gemini-embedding-001`, so keep `GEMINI_API_KEY` configured for those features even when generating with OpenAI. Analysis and drafting with OpenAI do not require a Gemini key. Configure the same variables in your deployment's backend environment.
 
 Ingest the skill knowledge base into pgvector (once, and after editing [`app/data/skill_kb.json`](backend/app/data/skill_kb.json)):
 
