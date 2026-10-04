@@ -148,8 +148,14 @@ async def test_draft_preferences_reach_gemini(style, language, motivation):
     assert f"WRITING STYLE: {style}." in prompt
     assert gemini_service._STYLE_RULES[style] in prompt
     assert "Sie-Form in every style" in prompt
-    assert "no more than 270 words" in prompt
-    assert "never pad" in prompt
+    assert "between 250 and 270 words" in prompt
+    assert "if under 250, develop" in prompt
+    assert "describe a concrete resume example" in prompt
+    assert "identify the advertised task it relates to" in prompt
+    assert "Do not merely list" in prompt
+    assert "never as a claim" in prompt
+    assert "Do not use Markdown bold" in prompt
+    assert "Shorter letters are welcome" not in prompt
     assert "unsupported achievements" in prompt
     assert "NOT evidence for skills, experience, or the match score" in prompt
     if motivation:
@@ -163,6 +169,34 @@ async def test_draft_preferences_reach_gemini(style, language, motivation):
 def test_whitespace_motivation_uses_missing_context_fallback():
     prompt = gemini_service._build_prompt(_request(personal_motivation="  \n "))
     assert "No personal motivation was supplied" in prompt
+
+
+@pytest.mark.asyncio
+async def test_short_cover_letter_gets_one_expansion_attempt():
+    short = make_valid_analysis(matching_skills=[], generated_draft="Dear Hiring Team,\n\nI built APIs.\n\nBest regards,\nAlex Morgan")
+    full_draft = "Dear Hiring Team,\n\n" + " ".join(["word"] * 243) + "\n\nBest regards,\nAlex Morgan"
+    fuller = short.model_copy(update={"generated_draft": full_draft})
+    client, response = _fake_client(parsed=short)
+    client.aio.models.generate_content.side_effect = [
+        response, SimpleNamespace(parsed=fuller, usage_metadata=response.usage_metadata),
+    ]
+    with patch.object(gemini_service, "_get_client", return_value=client):
+        result, prompt_tokens, output_tokens = await gemini_service.run_analysis(_request(mode="anschreiben"))
+    assert gemini_service.draft_word_count(result.generated_draft, "anschreiben") == 250
+    assert (prompt_tokens, output_tokens) == (22, 44)
+    feedback = client.aio.models.generate_content.call_args.kwargs["contents"]
+    assert "target is 250-270" in feedback
+    assert "without inventing experience" in feedback
+
+
+@pytest.mark.asyncio
+async def test_length_alone_does_not_discard_verified_letter_after_retry():
+    expected = make_valid_analysis()
+    client, _ = _fake_client(parsed=expected)
+    with patch.object(gemini_service, "_get_client", return_value=client):
+        result, _, _ = await gemini_service.run_analysis(_request(mode="anschreiben"))
+    assert result == expected
+    assert client.aio.models.generate_content.await_count == 2
 
 
 @pytest.mark.asyncio
