@@ -30,21 +30,28 @@ def _payload():
     }
 
 
-def test_authenticated_analyze_persists_and_returns_usage(client):
+@pytest.mark.parametrize("preferences, expected", [
+    ({}, {"writing_style": "neutral", "personal_motivation": None}),
+    ({"writing_style": "friendly", "personal_motivation": "  I enjoy accessible software.  "},
+     {"writing_style": "friendly", "personal_motivation": "I enjoy accessible software."}),
+])
+def test_authenticated_analyze_persists_and_returns_usage(client, preferences, expected):
     analysis = make_valid_analysis()
     with patch.object(supabase_service, "is_configured", return_value=True), \
          patch.object(supabase_service, "get_user_id", AsyncMock(return_value="user-1")), \
          patch.object(supabase_service, "daily_limit", return_value=20), \
          patch.object(supabase_service, "count_usage_today", AsyncMock(return_value=3)), \
          patch.object(supabase_service, "log_usage", AsyncMock()), \
-         patch.object(supabase_service, "save_analysis", AsyncMock(return_value="analysis-42")), \
+         patch.object(supabase_service, "save_analysis", AsyncMock(return_value="analysis-42")) as save, \
          patch.object(main, "run_analysis", AsyncMock(return_value=(analysis, 100, 200))):
-        resp = client.post("/analyze", json=_payload(), headers=AUTH)
+        resp = client.post("/analyze", json={**_payload(), **preferences}, headers=AUTH)
 
     assert resp.status_code == 200
     body = resp.json()
     assert body["analysis_id"] == "analysis-42"
     assert body["usage"] == {"used_today": 4, "daily_limit": 20}
+    saved = save.call_args.args[0]
+    assert {key: saved[key] for key in expected} == expected
 
 
 def test_quota_exceeded_returns_429_without_calling_gemini(client):

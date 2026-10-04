@@ -23,6 +23,7 @@ import type {
   ResumeRow,
   UsageInfo,
   View,
+  WritingStyle,
 } from "./types";
 
 export default function App() {
@@ -93,6 +94,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const [view, setView] = useState<View>("workspace");
   const [mode, setMode] = useState<Mode>("anschreiben");
   const [language, setLanguage] = useState<Language>("en");
+  const [personalMotivation, setPersonalMotivation] = useState("");
+  const [writingStyle, setWritingStyle] = useState<WritingStyle>("neutral");
 
   const [resumeText, setResumeText] = useState("");
   const [jobDescriptionText, setJobDescriptionText] = useState("");
@@ -167,6 +170,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
           job_description_text: jobDescriptionText,
           mode,
           language,
+          personal_motivation: personalMotivation.trim() || null,
+          writing_style: writingStyle,
           // History title defaults to the job title; fall back to the job's first line.
           title: jobTitle.trim() || deriveTitle(jobDescriptionText, ""),
           resume_id: activeResumeId,
@@ -249,6 +254,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setJobTitle(row.title ?? "");
     setMode(row.mode);
     setLanguage(row.language);
+    setPersonalMotivation(row.personal_motivation ?? "");
+    setWritingStyle(row.writing_style ?? "neutral");
     setActiveResumeId(row.resume_id);
     setActiveJobId(row.job_description_id);
     setResult({
@@ -271,6 +278,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     await signOut();
     navigate("/");
     // Leave nothing of the previous user behind on a shared machine.
+    setPersonalMotivation("");
+    setWritingStyle("neutral");
     setView("workspace");
     setResumeText("");
     setJobDescriptionText("");
@@ -324,6 +333,10 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
             onLanguageChange={setLanguage}
             mode={mode}
             onModeChange={setMode}
+            personalMotivation={personalMotivation}
+            onPersonalMotivationChange={setPersonalMotivation}
+            writingStyle={writingStyle}
+            onWritingStyleChange={setWritingStyle}
             resumeText={resumeText}
             onResumeChange={setResumeText}
             resumeTitle={resumeTitle}

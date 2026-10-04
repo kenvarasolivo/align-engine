@@ -10,6 +10,7 @@ ALIGN reads a job description against your resume, shows exactly where you match
 
 *   **Skill alignment matrix:** Top matching skills (with evidence) vs. crucial gaps, plus an in-range fit score — enforced through a strict Pydantic schema so the model can't return junk.
 *   **Editable drafts:** One-page Anschreiben (strict cover letter) or sub-200-word cold email, in **English or German**. You refine every result in the Draft Editor before it goes anywhere.
+*   **Draft preferences:** Choose Neutral (default), Direct, or Friendly wording and optionally add personal motivation. Preferences are restored from saved history for regeneration. Letters have a 270-word body ceiling without a forced minimum; the existing export layout and rich-text pagination remain unchanged.
 *   **PDF and Word downloads:** Preview and export the current edited draft as a one-page A4 PDF or editable `.docx`. Cover letters use a right-aligned sender and date, a left-aligned recipient, a bold subject, and extra space before the subject and sign-off. Filenames follow `Anschreiben_Company_Applicant`, using names from the draft and omitting missing details. The layout adjusts spacing and font size (10–11.5 pt) to fit; drafts that exceed a readable single page must be shortened before downloading. Exports run in the browser, including for guests.
 *   **Skill Coach (RAG):** Turns each skill gap into a grounded upskilling plan. Gaps are embedded and matched against a curated knowledge base in **pgvector** (cosine KNN); Gemini writes advice drawn *only* from the retrieved cards and cites its source — auditable, not hallucinated.
 *   **Accounts (optional):** Email/password login via Supabase Auth. Guests get the full analyzer with nothing persisted; signed-in users get history, a resume vault, saved jobs, and insights.
@@ -51,6 +52,8 @@ python --version
 
 For an existing installation, run [`supabase/migrations/20261004_application_status.sql`](supabase/migrations/20261004_application_status.sql) in the SQL Editor to enable the history status dropdown. Existing analyses start as Draft; status changes use the existing user-scoped RLS update policy.
 Run [`supabase/migrations/20261004_rich_drafts.sql`](supabase/migrations/20261004_rich_drafts.sql) as well to save rich draft formatting in history. The editor offers Arial, Times New Roman and Calibri using embedded open, metrically compatible fonts (Liberation Sans, Tinos and Carlito), so the browser and PDF use the same font files. PDF exports preserve the editor's measured wrapping, manual line breaks, alignment and typography; content exceeding A4 continues onto subsequent pages without shrinking or truncation.
+
+Run [`supabase/migrations/20261004_draft_preferences.sql`](supabase/migrations/20261004_draft_preferences.sql) before deploying draft preferences to an existing database. It adds optional motivation and a Neutral default for older analyses.
 
 ### 2. Backend (FastAPI)
 
@@ -177,6 +180,8 @@ It calls the real Gemini API and reports schema-validity, structural-compliance,
   "job_description_text": "...",
   "mode": "anschreiben | email",
   "language": "en | de",
+  "writing_style": "neutral | direct | friendly (optional; defaults to neutral)",
+  "personal_motivation": "optional personal context, up to 2000 characters",
   "resume_id": "optional vault id",
   "job_description_id": "optional saved-job id"
 }

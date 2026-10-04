@@ -57,6 +57,8 @@ create table if not exists public.analyses (
   job_description_snapshot text not null,
   mode text not null check (mode in ('anschreiben', 'email')),
   language text not null check (language in ('en', 'de')),
+  personal_motivation text,
+  writing_style text not null default 'neutral' check (writing_style in ('neutral', 'direct', 'friendly')),
   matching_skills text[] not null default '{}',
   skill_gaps text[] not null default '{}',
   match_score integer,

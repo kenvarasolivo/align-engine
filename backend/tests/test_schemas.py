@@ -88,6 +88,18 @@ def test_rejects_malformed_json_text():
 
 # --- Inbound request contract -------------------------------------------------
 
+
+def test_legacy_request_defaults_to_neutral_without_motivation():
+    request = AnalyzeRequest(resume_text="CV", job_description_text="JD", mode="email", language="en")
+    assert request.writing_style == "neutral"
+    assert request.personal_motivation is None
+
+
+@pytest.mark.parametrize("extra", [{"writing_style": "casual"}, {"personal_motivation": "x" * 2001}])
+def test_rejects_invalid_draft_preferences(extra):
+    with pytest.raises(ValidationError):
+        AnalyzeRequest(resume_text="CV", job_description_text="JD", mode="email", language="en", **extra)
+
 def test_analyze_request_rejects_empty_resume():
     with pytest.raises(ValidationError):
         AnalyzeRequest(

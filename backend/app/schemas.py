@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 
 Mode = Literal["anschreiben", "email"]
 Language = Literal["en", "de"]
+WritingStyle = Literal["neutral", "direct", "friendly"]
 
 
 class AnalyzeRequest(BaseModel):
@@ -20,6 +21,8 @@ class AnalyzeRequest(BaseModel):
     job_description_text: str = Field(..., min_length=1, description="Raw pasted job description text.")
     mode: Mode = Field(..., description="Workflow mode: 'anschreiben' (one-page cover letter) or 'email' (cold outreach).")
     language: Language = Field(..., description="Strict output locale: 'en' or 'de'.")
+    personal_motivation: Optional[str] = Field(None, max_length=2000, description="Optional personal interest or context for the draft, not evidence of qualifications.")
+    writing_style: WritingStyle = Field("neutral", description="Draft wording: neutral, direct, or friendly; facts stay unchanged.")
     title: Optional[str] = Field(None, description="Editable label for the saved history row (defaults to the job title on the client).")
     resume_id: Optional[str] = Field(None, description="Vault resume id, when the resume came from the user's vault.")
     job_description_id: Optional[str] = Field(None, description="Saved job description id, when loaded from bookmarks.")

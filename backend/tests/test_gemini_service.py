@@ -131,3 +131,35 @@ def test_build_prompt_includes_documents_and_mode_rules(mode):
     assert "Kubernetes" in prompt                # job description embedded
     assert "OUTPUT LANGUAGE: German" in prompt   # language rule selected
     assert gemini_service._MODE_RULES[mode][:20] in prompt
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("style", ["neutral", "direct", "friendly"])
+@pytest.mark.parametrize("language", ["en", "de"])
+@pytest.mark.parametrize("motivation", [None, "I enjoy making complex tools accessible."])
+async def test_draft_preferences_reach_gemini(style, language, motivation):
+    client, _ = _fake_client(parsed=make_valid_analysis())
+    with patch.object(gemini_service, "_get_client", return_value=client):
+        await gemini_service.run_analysis(_request(
+            mode="anschreiben", language=language, writing_style=style,
+            personal_motivation=motivation,
+        ))
+    prompt = client.aio.models.generate_content.call_args.kwargs["contents"]
+    assert f"WRITING STYLE: {style}." in prompt
+    assert gemini_service._STYLE_RULES[style] in prompt
+    assert "Sie-Form in every style" in prompt
+    assert "no more than 270 words" in prompt
+    assert "never pad" in prompt
+    assert "unsupported achievements" in prompt
+    assert "NOT evidence for skills, experience, or the match score" in prompt
+    if motivation:
+        assert motivation in prompt
+        assert "No personal motivation was supplied" not in prompt
+    else:
+        assert "No personal motivation was supplied" in prompt
+        assert "=== OPTIONAL PERSONAL MOTIVATION" not in prompt
+
+
+def test_whitespace_motivation_uses_missing_context_fallback():
+    prompt = gemini_service._build_prompt(_request(personal_motivation="  \n "))
+    assert "No personal motivation was supplied" in prompt

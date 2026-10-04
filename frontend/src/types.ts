@@ -5,6 +5,7 @@ export type DraftDocument = JSONContent;
 
 export type Mode = "anschreiben" | "email";
 export type Language = "en" | "de";
+export type WritingStyle = "neutral" | "direct" | "friendly";
 export type OutputTab = "analysis" | "draft";
 export type View = "workspace" | "history" | "vault" | "jobs" | "insights";
 export type ApplicationStatus = "draft" | "applied" | "interviewing" | "offer" | "rejected" | "withdrawn";
@@ -102,6 +103,8 @@ export interface AnalysisRow {
   job_description_snapshot: string;
   mode: Mode;
   language: Language;
+  personal_motivation?: string | null;
+  writing_style?: WritingStyle | null;
   matching_skills: string[];
   skill_gaps: string[];
   match_score: number | null;

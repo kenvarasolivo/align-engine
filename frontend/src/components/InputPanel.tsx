@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { DragEvent, ReactNode } from "react";
-import type { JobRow, Language, Mode, ResumeRow } from "../types";
+import type { JobRow, Language, Mode, ResumeRow, WritingStyle } from "../types";
 import * as db from "../lib/db";
 
 interface InputPanelProps {
@@ -8,6 +8,10 @@ interface InputPanelProps {
   onLanguageChange: (language: Language) => void;
   mode: Mode;
   onModeChange: (mode: Mode) => void;
+  personalMotivation: string;
+  onPersonalMotivationChange: (value: string) => void;
+  writingStyle: WritingStyle;
+  onWritingStyleChange: (value: WritingStyle) => void;
   resumeText: string;
   onResumeChange: (value: string) => void;
   resumeTitle: string;
@@ -251,6 +255,10 @@ export default function InputPanel({
   onLanguageChange,
   mode,
   onModeChange,
+  personalMotivation,
+  onPersonalMotivationChange,
+  writingStyle,
+  onWritingStyleChange,
   resumeText,
   onResumeChange,
   resumeTitle,
@@ -383,10 +391,10 @@ export default function InputPanel({
     }`;
 
   return (
-    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-panel shadow-card">
+    <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-y-auto rounded-2xl border border-hairline bg-panel shadow-card">
       {/* Top half — Resume (paste, upload, or drag & drop) */}
       <div
-        className="relative flex-1 flex flex-col min-h-0"
+        className="relative flex-1 flex flex-col min-h-[200px]"
         onDragOver={(event) => {
           event.preventDefault();
           setIsDragActive(true);
@@ -506,7 +514,7 @@ export default function InputPanel({
       <div className="border-t border-hairline" />
 
       {/* Bottom half — Job Description */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 flex flex-col min-h-[200px]">
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-2.5">
           <span className="label-caps">{t.jobLabel}</span>
           {canSave && (
@@ -538,7 +546,7 @@ export default function InputPanel({
       </div>
 
       {/* Action bar pinned to the bottom — output choices sit on the path to the CTA */}
-      <div className="px-4 py-4 bg-surface/60 border-t border-hairline">
+      <div className="shrink-0 px-4 py-4 bg-surface/60 border-t border-hairline">
         <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
           <Segmented
             label={t.formatLabel}
@@ -559,6 +567,38 @@ export default function InputPanel({
             ]}
           />
         </div>
+        <div className="mb-3.5 flex flex-col items-start">
+          <Segmented
+            label={language === "de" ? "Schreibstil" : "Writing style"}
+            value={writingStyle}
+            onChange={onWritingStyleChange}
+            options={[
+              { value: "neutral", label: "Neutral" },
+              { value: "direct", label: language === "de" ? "Direkt" : "Direct" },
+              { value: "friendly", label: language === "de" ? "Freundlich" : "Friendly" },
+            ]}
+          />
+        </div>
+        <details className="mb-3.5 rounded-lg border border-hairline bg-panel px-3 py-2">
+          <summary className="focus-ring cursor-pointer text-sm text-charcoal/75">
+            {language === "de" ? "Möchtest du etwas ergänzen? (optional)" : "Anything you'd like to add? (optional)"}
+            {personalMotivation.trim() && <span className="ml-2 text-xs text-cobalt">{language === "de" ? "Hinzugefügt" : "Added"}</span>}
+          </summary>
+          <label htmlFor="personal-motivation" className="mt-2 block text-xs leading-relaxed text-charcoal/65">
+            {language === "de"
+              ? "Warum interessiert dich diese Stelle oder das Unternehmen? Gibt es etwas, das dein Lebenslauf nicht erklärt?"
+              : "Why does this role or company interest you? Is there something your CV doesn't explain?"}
+          </label>
+          <textarea
+            id="personal-motivation"
+            value={personalMotivation}
+            onChange={(event) => onPersonalMotivationChange(event.target.value)}
+            maxLength={2000}
+            rows={3}
+            className="focus-ring mt-2 w-full resize-y rounded-md border border-hairline bg-surface px-3 py-2 text-sm text-charcoal"
+            placeholder={language === "de" ? "Ein paar persönliche Sätze reichen…" : "A few personal sentences are enough…"}
+          />
+        </details>
         {error && (
           <div
             className="mb-3 flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5 animate-fade-in"
