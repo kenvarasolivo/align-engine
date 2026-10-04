@@ -3,7 +3,7 @@
 // sees their own rows. Functions throw on failure; callers surface the error.
 
 import { supabase } from "./supabase";
-import type { AnalysisRow, JobRow, ResumeRow, UsageRow } from "../types";
+import type { AnalysisRow, ApplicationStatus, DraftDocument, JobRow, ResumeRow, UsageRow } from "../types";
 
 function client() {
   if (!supabase) throw new Error("Supabase is not configured.");
@@ -28,6 +28,11 @@ export async function latestResume(): Promise<ResumeRow | null> {
 }
 
 export async function saveResume(userId: string, title: string, content: string): Promise<ResumeRow> {
+  const existing = (await listResumes()).find((row) => row.title === title && row.content === content);
+  if (existing) {
+    await touchResume(existing.id);
+    return existing;
+  }
   const { data, error } = await client()
     .from("resumes")
     .insert({ user_id: userId, title, content, last_used_at: new Date().toISOString() })
@@ -70,6 +75,8 @@ export async function listJobs(): Promise<JobRow[]> {
 }
 
 export async function saveJob(userId: string, title: string, content: string): Promise<JobRow> {
+  const existing = (await listJobs()).find((row) => row.title === title && row.content === content);
+  if (existing) return existing;
   const { data, error } = await client()
     .from("job_descriptions")
     .insert({ user_id: userId, title, content })
@@ -106,8 +113,20 @@ export async function deleteAnalysis(id: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function updateFinalDraft(id: string, finalDraft: string): Promise<void> {
-  const { error } = await client().from("analyses").update({ final_draft: finalDraft }).eq("id", id);
+export async function deleteAnalyses(ids: string[]): Promise<void> {
+  if (!ids.length) return;
+  const { error } = await client().from("analyses").delete().in("id", ids);
+  if (error) throw error;
+}
+
+export async function updateAnalysisStatus(id: string, status: ApplicationStatus): Promise<void> {
+  const { error } = await client().from("analyses").update({ status }).eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateFinalDraft(id: string, finalDraft: string, document?: DraftDocument | null): Promise<void> {
+  const update = { final_draft: finalDraft, ...(document ? { draft_document: document } : {}) };
+  const { error } = await client().from("analyses").update(update).eq("id", id);
   if (error) throw error;
 }
 

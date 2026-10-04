@@ -1,10 +1,13 @@
 // Shared app-wide types (kept out of App.tsx so components and lib code
 // can import them without circular references).
+import type { JSONContent } from "@tiptap/core";
+export type DraftDocument = JSONContent;
 
 export type Mode = "anschreiben" | "email";
 export type Language = "en" | "de";
 export type OutputTab = "analysis" | "draft";
 export type View = "workspace" | "history" | "vault" | "jobs" | "insights";
+export type ApplicationStatus = "draft" | "applied" | "interviewing" | "offer" | "rejected" | "withdrawn";
 
 export interface UsageInfo {
   used_today: number;
@@ -90,6 +93,7 @@ export interface JobRow {
 
 export interface AnalysisRow {
   id: string;
+  status?: ApplicationStatus;
   resume_id: string | null;
   job_description_id: string | null;
   /** Editable history label; null for older rows (falls back to a derived title). */
@@ -104,6 +108,7 @@ export interface AnalysisRow {
   score_rationale: string | null;
   generated_draft: string;
   final_draft: string | null;
+  draft_document?: DraftDocument | null;
   prompt_tokens: number | null;
   output_tokens: number | null;
   created_at: string;

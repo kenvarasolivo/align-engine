@@ -73,6 +73,9 @@ alter table public.analyses add column if not exists match_score integer;
 alter table public.analyses add column if not exists score_rationale text;
 -- Editable history title (defaults to the job title at analysis time; renameable).
 alter table public.analyses add column if not exists title text;
+alter table public.analyses add column if not exists draft_document jsonb;
+alter table public.analyses add column if not exists status text not null default 'draft'
+  check (status in ('draft', 'applied', 'interviewing', 'offer', 'rejected', 'withdrawn'));
 
 create index if not exists analyses_user_idx on public.analyses (user_id, created_at desc);
 

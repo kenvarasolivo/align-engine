@@ -1,13 +1,16 @@
-import type { AnalysisResult, Language, Mode, OutputTab } from "../types";
+import { lazy, Suspense } from "react";
+import type { AnalysisResult, DraftDocument, Language, Mode, OutputTab } from "../types";
 import SkillCoach from "./SkillCoach";
-import DraftDownloads from "./DraftDownloads";
+const RichDraftEditor = lazy(() => import("./RichDraftEditor"));
 
 interface OutputPanelProps {
   language: Language;
   mode: Mode;
   result: AnalysisResult | null;
   draft: string;
-  onDraftChange: (value: string) => void;
+  onDraftChange: (value: string, document: DraftDocument) => void;
+  draftDocument: DraftDocument | null;
+  draftSaveError: boolean;
   activeTab: OutputTab;
   onTabChange: (tab: OutputTab) => void;
   isLoading: boolean;
@@ -195,6 +198,8 @@ export default function OutputPanel({
   result,
   draft,
   onDraftChange,
+  draftDocument,
+  draftSaveError,
   activeTab,
   onTabChange,
   isLoading,
@@ -209,7 +214,6 @@ export default function OutputPanel({
   ];
 
   const scorePct = result ? Math.max(0, Math.min(100, Math.round(result.match_score ?? 0))) : 0;
-  const wordCount = draft.trim() ? draft.trim().split(/\s+/).length : 0;
 
   return (
     <section className="flex flex-col min-h-[560px] lg:min-h-0 lg:h-full overflow-hidden rounded-2xl border border-hairline bg-panel shadow-card">
@@ -341,23 +345,10 @@ export default function OutputPanel({
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex flex-col bg-panel">
-          <DraftDownloads draft={draft} mode={mode} language={language} isLoading={isLoading} />
-          <div className="flex items-center justify-between gap-3 px-5 lg:px-6 py-2 border-b border-hairline bg-surface/40">
-            <span className="label-caps">{t.draftTab}</span>
-            {wordCount > 0 && (
-              <span className="text-2xs font-medium tabular-nums text-charcoal/40">
-                {wordCount.toLocaleString(language === "de" ? "de-DE" : "en-US")} {t.words}
-              </span>
-            )}
-          </div>
-          <textarea
-            value={draft}
-            onChange={(event) => onDraftChange(event.target.value)}
-            placeholder={t.draftEmpty}
-            spellCheck={false}
-            aria-label={t.draftTab}
-            className="editor-surface flex-1 w-full min-h-0 px-6 lg:px-8 py-5 text-[11pt] leading-relaxed [font-family:Calibri,Carlito,'Segoe_UI',Arial,sans-serif] border-none outline-none"
-          />
+          {draftSaveError && <p role="alert" className="bg-danger-soft px-4 py-2 text-xs text-danger-strong">{language === "de" ? "Änderungen konnten nicht im Verlauf gespeichert werden. Ihr Entwurf bleibt hier verfügbar; exportieren Sie ihn vor dem Verlassen." : "Could not save changes to history. Your draft is still available here; export it before leaving."}</p>}
+          <Suspense fallback={<p className="p-6 text-sm text-charcoal/60">{language === "de" ? "Editor wird geladen..." : "Loading editor..."}</p>}>
+            <RichDraftEditor draft={draft} document={draftDocument} onChange={onDraftChange} mode={mode} language={language} isLoading={isLoading} />
+          </Suspense>
         </div>
       )}
     </section>

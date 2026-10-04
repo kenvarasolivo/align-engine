@@ -49,6 +49,9 @@ python --version
 2.  Open **SQL Editor → New query**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql), and run it. This creates the tables + RLS policies, enables the `vector` extension, and adds the pgvector skill knowledge base + the `match_skill_kb` KNN function.
 3.  Grab the **Project URL**, **anon public key**, and **service_role key** from *Project Settings → API*.
 
+For an existing installation, run [`supabase/migrations/20261004_application_status.sql`](supabase/migrations/20261004_application_status.sql) in the SQL Editor to enable the history status dropdown. Existing analyses start as Draft; status changes use the existing user-scoped RLS update policy.
+Run [`supabase/migrations/20261004_rich_drafts.sql`](supabase/migrations/20261004_rich_drafts.sql) as well to save rich draft formatting in history. The editor offers Arial, Times New Roman and Calibri using embedded open, metrically compatible fonts (Liberation Sans, Tinos and Carlito), so the browser and PDF use the same font files. PDF exports preserve the editor's measured wrapping, manual line breaks, alignment and typography; content exceeding A4 continues onto subsequent pages without shrinking or truncation.
+
 ### 2. Backend (FastAPI)
 
 ```powershell

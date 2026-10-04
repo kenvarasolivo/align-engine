@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import DeleteConfirmation from "./DeleteConfirmation";
 import * as db from "../lib/db";
 import type { Language, ResumeRow } from "../types";
 
@@ -18,7 +19,6 @@ const STRINGS: Record<
     use: string;
     rename: string;
     delete: string;
-    confirmDelete: string;
     lastUsed: string;
     never: string;
     saveTitle: string;
@@ -34,7 +34,6 @@ const STRINGS: Record<
     use: "Use in Workspace",
     rename: "Rename",
     delete: "Delete",
-    confirmDelete: "Delete forever?",
     lastUsed: "Last used",
     never: "never",
     saveTitle: "Save",
@@ -49,7 +48,6 @@ const STRINGS: Record<
     use: "Im Workspace verwenden",
     rename: "Umbenennen",
     delete: "Löschen",
-    confirmDelete: "Endgültig löschen?",
     lastUsed: "Zuletzt verwendet",
     never: "nie",
     saveTitle: "Speichern",
@@ -64,7 +62,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ResumeRow | null>(null);
 
   useEffect(() => {
     db.listResumes()
@@ -85,18 +83,8 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
   };
 
   const handleDelete = async (row: ResumeRow) => {
-    if (confirmingId !== row.id) {
-      setConfirmingId(row.id);
-      setTimeout(() => setConfirmingId((current) => (current === row.id ? null : current)), 3000);
-      return;
-    }
-    setConfirmingId(null);
-    try {
-      await db.deleteResume(row.id);
-      setRows((current) => current?.filter((item) => item.id !== row.id) ?? null);
-    } catch {
-      setError(t.loadFailed);
-    }
+    await db.deleteResume(row.id);
+    setRows((current) => current?.filter((item) => item.id !== row.id) ?? null);
   };
 
   const locale = language === "de" ? "de-DE" : "en-US";
@@ -147,7 +135,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
             key={row.id}
             className="bg-panel rounded-xl border border-hairline shadow-xs px-5 py-4 transition-shadow duration-200 hover:shadow-card"
           >
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="min-w-0 flex-1">
                 {renamingId === row.id ? (
                   <div className="flex items-center gap-2">
@@ -190,7 +178,7 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
               </div>
 
               {renamingId !== row.id && (
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => onUseResume(row)}
@@ -210,25 +198,27 @@ export default function VaultPage({ language, onUseResume }: VaultPageProps) {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void handleDelete(row)}
-                    className={`focus-ring px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 ${
-                      confirmingId === row.id
-                        ? "bg-danger border-danger text-white shadow-xs"
-                        : "border-hairline bg-panel text-charcoal/70 shadow-xs hover:text-danger hover:border-danger-border"
-                    }`}
+                    onClick={() => setDeleteTarget(row)}
+                    className="btn-danger min-h-10 px-3 py-1.5 text-xs"
+                    aria-label={`${t.delete}: ${row.title}`}
                   >
-                    {confirmingId === row.id ? t.confirmDelete : t.delete}
+                    {t.delete}
                   </button>
                 </div>
               )}
             </div>
 
-            <p className="mt-3 text-xs leading-relaxed text-charcoal/50 line-clamp-2 whitespace-pre-line">
-              {row.content.slice(0, 240)}
-            </p>
+            <details className="group mt-4 border-t border-hairline pt-3">
+              <summary className="focus-ring w-fit cursor-pointer rounded-lg py-1 text-xs font-semibold text-cobalt">
+                {language === "de" ? "Vollst\u00e4ndigen Inhalt anzeigen" : "View full resume"}
+              </summary>
+              <pre className="mt-3 max-h-[60vh] overflow-auto whitespace-pre-wrap break-words rounded-xl border border-hairline bg-surface p-4 font-sans text-sm leading-relaxed text-charcoal">{row.content}</pre>
+            </details>
           </div>
         ))}
       </div>
+      {deleteTarget && <DeleteConfirmation language={language} itemName={deleteTarget.title}
+        onCancel={() => setDeleteTarget(null)} onConfirm={() => handleDelete(deleteTarget)} />}
     </div>
   );
 }

@@ -103,6 +103,27 @@ def test_get_client_requires_api_key(monkeypatch):
     gemini_service._get_client.cache_clear()
 
 
+def test_unknown_recipient_defaults_preserve_company_placeholders():
+    text = "[Firmenname]\n[Name Ansprechpartner]\n[Firmenanschrift]\n\nSehr geehrte/r [Name Ansprechpartner],\n\nBody."
+    result = gemini_service.safe_recipient_defaults(text, "de")
+    assert "[Firmenname]\nPersonalabteilung\n[Firmenanschrift]" in result
+    assert "Sehr geehrte Damen und Herren," in result
+    assert "[Name Ansprechpartner]" not in result
+
+
+def test_known_contact_is_not_replaced():
+    text = "Acme\nFrau Mueller\n\nSehr geehrte Frau Mueller,\n\nBody."
+    assert gemini_service.safe_recipient_defaults(text, "de") == text
+
+
+def test_unknown_english_recipient_has_generic_greeting():
+    assert gemini_service.safe_recipient_defaults("Dear [Recipient Name],\n\nBody.", "en") == "Dear Hiring Team,\n\nBody."
+
+
+def test_contact_fallbacks_do_not_swallow_blank_lines():
+    assert gemini_service.safe_recipient_defaults("[Name Ansprechpartner]\n\n[Anrede]\n\nBody.", "de") == "Personalabteilung\n\nSehr geehrte Damen und Herren,\n\nBody."
+
+
 @pytest.mark.parametrize("mode", ["anschreiben", "email"])
 def test_build_prompt_includes_documents_and_mode_rules(mode):
     prompt = gemini_service._build_prompt(_request(mode=mode, language="de"))

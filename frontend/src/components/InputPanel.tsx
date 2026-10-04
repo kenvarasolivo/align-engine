@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DragEvent, ReactNode } from "react";
-import type { Language, Mode } from "../types";
+import type { JobRow, Language, Mode, ResumeRow } from "../types";
+import * as db from "../lib/db";
 
 interface InputPanelProps {
   language: Language;
@@ -24,6 +25,8 @@ interface InputPanelProps {
   onSaveJob: () => Promise<boolean>;
   /** Called after a file upload replaces the resume text. */
   onResumeFileUploaded: () => void;
+  onUseResume: (row: ResumeRow) => void;
+  onUseJob: (row: JobRow) => void;
 }
 
 const ACCEPTED_FILE_TYPES = ".pdf,.docx,.txt";
@@ -263,6 +266,8 @@ export default function InputPanel({
   onSaveResume,
   onSaveJob,
   onResumeFileUploaded,
+  onUseResume,
+  onUseJob,
 }: InputPanelProps) {
   const t = STRINGS[language];
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -274,6 +279,55 @@ export default function InputPanel({
 
   const [resumeSaveState, setResumeSaveState] = useState<SaveState>("idle");
   const [jobSaveState, setJobSaveState] = useState<SaveState>("idle");
+  const [resumes, setResumes] = useState<ResumeRow[]>([]);
+  const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [libraryLoading, setLibraryLoading] = useState(true);
+  const [libraryError, setLibraryError] = useState(false);
+  const [libraryRevision, setLibraryRevision] = useState(0);
+
+  useEffect(() => {
+    if (!canSave) return;
+    let cancelled = false;
+    setLibraryLoading(true);
+    setLibraryError(false);
+    Promise.all([db.listResumes(), db.listJobs()])
+      .then(([savedResumes, savedJobs]) => {
+        if (cancelled) return;
+        setResumes(savedResumes);
+        setJobs(savedJobs);
+      })
+      .catch(() => { if (!cancelled) setLibraryError(true); })
+      .finally(() => { if (!cancelled) setLibraryLoading(false); });
+    return () => { cancelled = true; };
+  }, [canSave, libraryRevision]);
+
+  const savedPicker = <T extends ResumeRow | JobRow,>(items: T[], text: string, title: string, kind: "resume" | "job", onUse: (row: T) => void) => {
+    if (!canSave) return null;
+    const label = language === "de"
+      ? (kind === "resume" ? "Gespeicherter Lebenslauf" : "Gespeicherter Job")
+      : (kind === "resume" ? "Saved resume" : "Saved job");
+    return (
+      <div className="mx-5 mb-2">
+        <label className="flex items-center gap-3 text-xs text-charcoal/65">
+          <span className="shrink-0">{label}</span>
+          <select aria-label={label} className="focus-ring min-h-9 min-w-0 flex-1 rounded-lg border border-hairline bg-panel px-2 text-sm text-charcoal"
+            disabled={libraryLoading || libraryError || !items.length || isExtracting || isLoading}
+            value={items.find((item) => item.content === text && item.title === title)?.id ?? ""}
+            onChange={(event) => {
+              const item = items.find((item) => item.id === event.target.value);
+              if (item) { onUse(item); if (kind === "resume") { setUploadedFileName(null); setUploadError(null); } }
+            }}>
+            <option value="">{libraryLoading ? (language === "de" ? "Wird geladen…" : "Loading…")
+              : libraryError ? (language === "de" ? "Nicht verfügbar" : "Unavailable")
+              : !items.length ? (language === "de" ? "Noch keine gespeichert" : "No saved items yet")
+              : (language === "de" ? "Gespeicherten Eintrag auswählen…" : "Choose a saved item…")}</option>
+            {items.map((item) => <option key={item.id} value={item.id}>{item.title} · {new Date(item.created_at).toLocaleDateString(language === "de" ? "de-DE" : "en-US")}</option>)}
+          </select>
+        </label>
+        {libraryError && <button type="button" onClick={() => setLibraryRevision((value) => value + 1)} className="focus-ring mt-1 text-xs text-cobalt">{language === "de" ? "Erneut laden" : "Retry loading saved items"}</button>}
+      </div>
+    );
+  };
 
   const canSubmit = !isLoading && resumeText.trim().length > 0 && jobDescriptionText.trim().length > 0;
 
@@ -284,6 +338,7 @@ export default function InputPanel({
     setState("saving");
     const ok = await save();
     setState(ok ? "saved" : "failed");
+    if (ok) setLibraryRevision((value) => value + 1);
     setTimeout(() => setState("idle"), 2500);
   };
 
@@ -414,6 +469,7 @@ export default function InputPanel({
           </div>
         </div>
 
+        {savedPicker(resumes, resumeText, resumeTitle, "resume", onUseResume)}
         <TitleField
           label={t.titleLabel}
           value={resumeTitle}
@@ -462,6 +518,7 @@ export default function InputPanel({
             />
           )}
         </div>
+        {savedPicker(jobs, jobDescriptionText, jobTitle, "job", onUseJob)}
         <TitleField
           label={t.titleLabel}
           value={jobTitle}

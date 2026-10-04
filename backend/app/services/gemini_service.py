@@ -7,6 +7,7 @@ valid JSON matching our contract.
 """
 
 import os
+import re
 from functools import lru_cache
 
 from google import genai
@@ -43,8 +44,14 @@ _MODE_RULES = {
         "real name, address, phone number, and email. The same applies to the company name "
         "and address if the job description states them. Use a square-bracket placeholder "
         "ONLY for details genuinely absent from the provided documents (e.g. [Datum], "
-        "[Firmenanschrift], [Name Ansprechpartner]). Never output a placeholder for "
+        "[Firmenanschrift]). Never output a placeholder for "
         "information that is present in the resume or job description.\n"
+        "- If no named recipient/contact is provided, write 'Personalabteilung' (German) "
+        "or 'Human Resources' (English) on its own line after the company name and BEFORE "
+        "the company address in the recipient block. Use 'Sehr geehrte Damen und Herren,' "
+        "(German) or 'Dear Hiring Team,' (English) as the salutation. Never leave an empty "
+        "recipient name or use [Name Ansprechpartner]/[Recipient Name]. Keep unknown "
+        "company names and company addresses as explicit bracketed placeholders.\n"
         "- Include a subject line, a formal salutation, and a formal sign-off ending with the "
         "candidate's real name. The subject line MUST begin with 'Bewerbung als ' (German) or "
         "'Application for ' (English), followed by the exact position title from the job "
@@ -66,7 +73,9 @@ _MODE_RULES = {
         "- Tone: modern, conversational, punchy. Short paragraphs, no corporate filler.\n"
         "- Lead with a specific hook, name 2-3 sharp points of alignment, and end with a "
         "low-friction ask (a short call or a pointer to the right person).\n"
-        "- Use placeholders in square brackets for unknowns: [Recipient Name], [Your Name].\n"
+        "- For an unknown recipient, use 'Sehr geehrte Damen und Herren,' (German) or "
+        "'Dear Hiring Team,' (English), never a recipient-name placeholder. Use the "
+        "candidate's real name when present, otherwise [Your Name].\n"
         "- FORMATTING: generated_draft is plain text with real newline characters ('\\n'); "
         "separate paragraphs with a blank line ('\\n\\n')."
     ),
@@ -165,6 +174,25 @@ async def run_analysis(payload: AnalyzeRequest) -> tuple[AnalysisResponse, int |
 
     # The SDK parses Structured Output into the Pydantic model for us; fall back
     # to validating the raw JSON text if `parsed` is unavailable.
-    if isinstance(response.parsed, AnalysisResponse):
-        return response.parsed, prompt_tokens, output_tokens
-    return AnalysisResponse.model_validate_json(response.text), prompt_tokens, output_tokens
+    result = response.parsed if isinstance(response.parsed, AnalysisResponse) else AnalysisResponse.model_validate_json(response.text)
+    result.generated_draft = safe_recipient_defaults(result.generated_draft, payload.language)
+    return result, prompt_tokens, output_tokens
+
+
+def safe_recipient_defaults(draft: str, language: str) -> str:
+    """Replace unsafe unknown-contact placeholders without changing company or sender details."""
+    greeting = "Sehr geehrte Damen und Herren," if language == "de" else "Dear Hiring Team,"
+    department = "Personalabteilung" if language == "de" else "Human Resources"
+    draft = re.sub(
+        r"^(?:Sehr geehrt[^\n]*|Liebe[rs]?[^\n]*|Dear[^\n]*|Hi[^\n]*|Hello[^\n]*|\[Anrede\][^\n]*)\[[^\]\n]+\][^\n]*$",
+        greeting, draft, flags=re.MULTILINE | re.IGNORECASE,
+    )
+    draft = re.sub(
+        r"^Sehr geehrte?(?:/r)?[ \t]*(?:(?:Frau|Herrn?)[ \t]*)?[,!][ \t]*$",
+        greeting, draft, flags=re.MULTILINE | re.IGNORECASE,
+    )
+    draft = re.sub(r"^\[Anrede\][^\n]*$", greeting, draft, flags=re.MULTILINE | re.IGNORECASE)
+    return re.sub(
+        r"^\[(?:Name Ansprechpartner|Name des Ansprechpartners|Ansprechpartner(?:/in)?|Recipient Name|Contact Name|Empfängername)\][ \t]*$",
+        department, draft, flags=re.MULTILINE | re.IGNORECASE,
+    )

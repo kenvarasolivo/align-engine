@@ -15,6 +15,7 @@ import * as db from "./lib/db";
 import type {
   AnalysisResult,
   AnalysisRow,
+  DraftDocument,
   JobRow,
   Language,
   Mode,
@@ -106,6 +107,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [draft, setDraft] = useState("");
+  const [draftDocument, setDraftDocument] = useState<DraftDocument | null>(null);
+  const [draftSaveError, setDraftSaveError] = useState(false);
   const [activeTab, setActiveTab] = useState<OutputTab>("analysis");
   const [usage, setUsage] = useState<UsageInfo | null>(null);
 
@@ -136,15 +139,15 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   // Autosave the edited draft into the analysis history row.
   useEffect(() => {
     if (!session || !result?.analysis_id) return;
-    if (draft === result.generated_draft) return;
+    if (draft === result.generated_draft && !draftDocument) return;
     const analysisId = result.analysis_id;
     const timer = setTimeout(() => {
-      db.updateFinalDraft(analysisId, draft).catch(() => {
-        /* non-critical — the draft still lives in the editor */
-      });
+      db.updateFinalDraft(analysisId, draft, draftDocument)
+        .then(() => setDraftSaveError(false))
+        .catch(() => setDraftSaveError(true));
     }, 1200);
     return () => clearTimeout(timer);
-  }, [draft, session, result]);
+  }, [draft, draftDocument, session, result]);
 
   const handleAnalyze = async () => {
     if (isLoading || !resumeText.trim() || !jobDescriptionText.trim()) return;
@@ -179,6 +182,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       const data: AnalysisResult = await response.json();
       setResult(data);
       setDraft(data.generated_draft);
+      setDraftDocument(null);
+      setDraftSaveError(false);
       setActiveTab("analysis");
       if (data.usage) setUsage(data.usage);
     } catch (err) {
@@ -197,6 +202,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
         resumeText
       );
       setActiveResumeId(row.id);
+      setResumeTitle(row.title);
       return true;
     } catch {
       return false;
@@ -212,6 +218,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
         jobDescriptionText
       );
       setActiveJobId(row.id);
+      setJobTitle(row.title);
       return true;
     } catch {
       return false;
@@ -254,6 +261,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       analysis_id: row.id,
     });
     setDraft(row.final_draft ?? row.generated_draft);
+    setDraftDocument(row.draft_document ?? null);
+    setDraftSaveError(false);
     setActiveTab("draft");
     setView("workspace");
   };
@@ -271,6 +280,8 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setActiveJobId(null);
     setResult(null);
     setDraft("");
+    setDraftDocument(null);
+    setDraftSaveError(false);
     setUsage(null);
     setError(null);
     setActiveTab("analysis");
@@ -328,13 +339,17 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
             onSaveResume={handleSaveResume}
             onSaveJob={handleSaveJob}
             onResumeFileUploaded={() => setActiveResumeId(null)}
+            onUseResume={loadResume}
+            onUseJob={loadJob}
           />
           <OutputPanel
             language={language}
             mode={mode}
             result={result}
             draft={draft}
-            onDraftChange={setDraft}
+            draftDocument={draftDocument}
+            onDraftChange={(text, document) => { setDraft(text); setDraftDocument(document); }}
+            draftSaveError={draftSaveError}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             isLoading={isLoading}

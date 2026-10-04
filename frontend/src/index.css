@@ -18,6 +18,19 @@
 .letter-preview-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
 .letter-preview-page { box-sizing: border-box; background: white; color: #111; font-family: "Align Letter", Arial, sans-serif; box-shadow: 0 2px 16px rgb(0 0 0 / 0.15); }
 
+@font-face { font-family: "Align Arial"; src: url("/fonts/LiberationSans-Regular.ttf"); font-weight: 400; font-display: block; }
+@font-face { font-family: "Align Arial"; src: url("/fonts/LiberationSans-Bold.ttf"); font-weight: 700; font-display: block; }
+@font-face { font-family: "Align Times"; src: url("/fonts/Tinos-Regular.ttf"); font-weight: 400; font-display: block; }
+@font-face { font-family: "Align Times"; src: url("/fonts/Tinos-Bold.ttf"); font-weight: 700; font-display: block; }
+@font-face { font-family: "Align Calibri"; src: url("/fonts/Carlito-Regular.ttf"); font-weight: 400; font-display: block; }
+@font-face { font-family: "Align Calibri"; src: url("/fonts/Carlito-Bold.ttf"); font-weight: 700; font-display: block; }
+.rich-letter-page { box-sizing: border-box; background: white; color: #111; box-shadow: 0 2px 16px rgb(0 0 0 / 0.15); }
+.rich-letter-content { outline: none; font-family: "Align Arial", Arial, sans-serif; font-size: 11pt; line-height: 1.36; white-space: pre-wrap; overflow-wrap: anywhere; }
+.rich-letter-content p { margin: 0; min-height: 1.36em; }
+.rich-letter-content strong { font-weight: 700; }
+/* Keep consecutive hard breaks at a full line height even with Tailwind's image reset. */
+.rich-letter-content img.ProseMirror-separator { display: inline !important; border: none !important; margin: 0 !important; width: 0 !important; height: 1.36em !important; vertical-align: baseline; opacity: 0; }
+
 @layer base {
   /*
    * ALIGN palette — themeable via CSS variables. Dark navy is the default
@@ -185,6 +198,10 @@
   }
   .btn-secondary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-hairline bg-panel font-medium text-charcoal/75 shadow-xs transition-all duration-150 outline-none hover:border-hairline-strong hover:text-obsidian focus-visible:ring-2 focus-visible:ring-cobalt/40 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40;
+  }
+
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-danger-border bg-danger-soft font-semibold text-danger-strong transition-colors outline-none hover:bg-danger hover:border-danger hover:text-white focus-visible:ring-2 focus-visible:ring-danger focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40;
   }
 
   /* Shimmer skeleton for loading states */

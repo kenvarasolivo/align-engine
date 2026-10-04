@@ -20,7 +20,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 
-$backend = "cd '$root\backend'; .\.venv\Scripts\Activate.ps1; uvicorn main:app --reload --port 8000"
+# Invoke the environment's Python directly: console launchers and activation scripts
+# can retain absolute paths to the old location after the repository is moved.
+$backend = "cd '$root\backend'; & '.\.venv\Scripts\python.exe' -m uvicorn main:app --reload --port 8000"
 $frontend = "cd '$root\frontend'; npm run dev"
 
 if ($Same) {
