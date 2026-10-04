@@ -515,7 +515,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
                 onClick={handleGuest}
                 className="focus-ring mt-6 rounded-md px-1 text-[13px] font-medium text-charcoal/55 transition-colors duration-150 hover:text-cobalt"
               >
-                Continue as guest — nothing is saved →
+                Continue as guest — no saved history →
               </button>
             )}
           </div>
@@ -733,7 +733,7 @@ export default function LandingPage({ navigate, onOpenAuth }: LandingPageProps) 
                 onClick={handleGuest}
                 className="focus-ring mt-5 rounded-md px-1 text-sm font-medium text-charcoal/55 transition-colors duration-150 hover:text-cobalt"
               >
-                Continue as guest — nothing is saved →
+                Continue as guest — no saved history →
               </button>
             )}
           </div>

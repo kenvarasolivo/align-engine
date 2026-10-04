@@ -18,7 +18,7 @@ from tests.conftest import make_valid_analysis
 
 def _request(**overrides) -> AnalyzeRequest:
     data = {
-        "resume_text": "Python engineer, built FastAPI services.",
+        "resume_text": "Python engineer. Built FastAPI services in Python for 3 years. Designed and shipped REST APIs at scale. Modeled relational schemas in PostgreSQL.",
         "job_description_text": "Seeking a backend engineer with Kubernetes.",
         "mode": "email",
         "language": "en",
@@ -163,3 +163,47 @@ async def test_draft_preferences_reach_gemini(style, language, motivation):
 def test_whitespace_motivation_uses_missing_context_fallback():
     prompt = gemini_service._build_prompt(_request(personal_motivation="  \n "))
     assert "No personal motivation was supplied" in prompt
+
+
+@pytest.mark.asyncio
+async def test_invalid_evidence_and_long_email_are_retried_and_tokens_totaled():
+    invalid = make_valid_analysis(matching_skills=[{"skill": "Kubernetes", "evidence": "Managed a Kubernetes fleet"}], generated_draft=" ".join(["word"] * 200))
+    valid = make_valid_analysis(matching_skills=[], skill_gaps=[])
+    client, response = _fake_client(parsed=invalid)
+    corrected = SimpleNamespace(parsed=valid, usage_metadata=response.usage_metadata)
+    client.aio.models.generate_content.side_effect = [response, corrected]
+    with patch.object(gemini_service, "_get_client", return_value=client):
+        output, prompt, completion = await gemini_service.run_analysis(_request())
+    assert output.matching_skills == []
+    assert (prompt, completion) == (22, 44)
+    feedback = client.aio.models.generate_content.call_args_list[1].kwargs["contents"]
+    assert "not a verbatim resume quote" in feedback
+    assert "maximum is 199" in feedback
+
+
+@pytest.mark.asyncio
+async def test_unverifiable_evidence_is_never_returned_after_retry():
+    client, _ = _fake_client(parsed=make_valid_analysis(matching_skills=[{"skill": "AWS", "evidence": "Invented experience"}]))
+    with patch.object(gemini_service, "_get_client", return_value=client):
+        with pytest.raises(ValueError, match="could not be verified"):
+            await gemini_service.run_analysis(_request())
+    assert client.aio.models.generate_content.await_count == 2
+
+
+def test_evidence_normalizes_whitespace_but_never_invents_words():
+    request = _request(resume_text="Built\nFastAPI  services in Python.")
+    result = make_valid_analysis(matching_skills=[{"skill": "Python", "evidence": "Built FastAPI services in Python"}])
+    assert gemini_service.quality_issues(result, request) == []
+    result.matching_skills[0].evidence = "Built scalable FastAPI services in Python"
+    assert gemini_service.quality_issues(result, request)
+
+
+def test_cover_letter_word_limit_excludes_header_and_includes_signoff():
+    header = " ".join(["address"] * 100)
+    draft = f"{header}\n\nApplication for Engineer\n\nDear Hiring Team,\n\n{' '.join(['word'] * 263)}\n\nBest regards,\nAlex Morgan"
+    assert gemini_service.draft_word_count(draft, "anschreiben") == 270
+    request = _request(mode="anschreiben")
+    result = make_valid_analysis(matching_skills=[], generated_draft=draft)
+    assert gemini_service.quality_issues(result, request) == []
+    result.generated_draft += " extra"
+    assert gemini_service.quality_issues(result, request)

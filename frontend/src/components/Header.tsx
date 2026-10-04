@@ -6,7 +6,6 @@ interface HeaderProps {
   view: View;
   onViewChange: (view: View) => void;
   language: Language;
-  onLanguageChange: (language: Language) => void;
   /** Null while browsing as guest. */
   userEmail: string | null;
   usage: UsageInfo | null;
@@ -15,11 +14,6 @@ interface HeaderProps {
   /** Returns to the marketing landing page. */
   onLogoClick: () => void;
 }
-
-const LANGUAGES: { value: Language; label: string }[] = [
-  { value: "en", label: "EN" },
-  { value: "de", label: "DE" },
-];
 
 const NAV: Record<Language, { value: View; label: string }[]> = {
   en: [
@@ -42,7 +36,6 @@ export default function Header({
   view,
   onViewChange,
   language,
-  onLanguageChange,
   userEmail,
   usage,
   onSignOut,
@@ -53,7 +46,7 @@ export default function Header({
   const quotaRatio = usage ? usage.used_today / Math.max(usage.daily_limit, 1) : 0;
 
   return (
-    <header className="h-16 shrink-0 flex items-center justify-between gap-4 px-4 lg:px-6 bg-panel border-b border-hairline">
+    <header className="min-h-16 shrink-0 flex flex-wrap items-center justify-between gap-3 py-3 px-4 lg:px-6 bg-panel border-b border-hairline">
       <div className="flex items-center gap-3 lg:gap-6 min-w-0">
         {/* Brand — returns to the landing page */}
         <button
@@ -92,8 +85,8 @@ export default function Header({
         {/* Daily quota chip with depletion bar */}
         {usage && (
           <span
-            className="hidden lg:flex items-center gap-2 h-8 px-3 rounded-full border border-hairline bg-panel shadow-xs"
-            title={language === "de" ? "Analysen heute" : "Analyses today"}
+            className="hidden sm:flex items-center gap-2 h-8 px-3 rounded-full border border-hairline bg-panel shadow-xs"
+            title={language === "de" ? "Analyseversuche heute ? Zur?cksetzung um 00:00 UTC" : "Analysis attempts today ? resets at 00:00 UTC"}
           >
             <span className="h-1.5 w-12 rounded-full bg-surface-sunken overflow-hidden" aria-hidden="true">
               <span
@@ -108,30 +101,6 @@ export default function Header({
             </span>
           </span>
         )}
-
-        {/* Interface-language toggle — also the global UI language.
-            The output language + format live in the workspace action bar. */}
-        <div
-          className="flex items-center p-0.5 rounded-lg border border-hairline bg-surface-sunken/70"
-          role="group"
-          aria-label={language === "de" ? "Sprache der Oberfläche" : "Interface language"}
-        >
-          {LANGUAGES.map(({ value, label }) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onLanguageChange(value)}
-              aria-pressed={language === value}
-              className={`focus-ring px-2.5 py-1.5 text-sm font-semibold rounded-md transition-all duration-150 ${
-                language === value
-                  ? "bg-panel text-cobalt shadow-xs ring-1 ring-black/[0.04]"
-                  : "text-charcoal/60 hover:text-obsidian"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
 
         {/* Dark / light theme toggle */}
         <ThemeToggle />
@@ -159,7 +128,7 @@ export default function Header({
         ) : (
           <div className="flex items-center gap-2.5 pl-3 border-l border-hairline">
             <span className="hidden md:inline text-xs text-charcoal/40">
-              {language === "de" ? "Gast — nichts wird gespeichert" : "Guest — nothing is saved"}
+              {language === "de" ? "Gast · kein gespeicherter Verlauf" : "Guest · no saved history"}
             </span>
             <button
               type="button"

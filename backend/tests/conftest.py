@@ -10,6 +10,16 @@ import pytest
 from app.schemas import AnalysisResponse, SkillMatch
 
 
+@pytest.fixture(autouse=True)
+def isolate_runtime(monkeypatch):
+    """Tests never inherit real account keys or spend a network quota."""
+    from app.services import quota_service
+    for key in ("SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_ANON_KEY", "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "VERCEL", "ENVIRONMENT", "GUEST_DAILY_ANALYSIS_LIMIT", "GUEST_DAILY_COACH_LIMIT", "DAILY_COACH_LIMIT"):
+        monkeypatch.delenv(key, raising=False)
+    quota_service._local_counts.clear()
+    quota_service._local_day = ""
+
+
 def make_valid_analysis(**overrides) -> AnalysisResponse:
     """Build a schema-valid AnalysisResponse, overridable per test."""
     data = {

@@ -1,11 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Language, RetrievedSkill, SkillCoachResult } from "../types";
 
 interface SkillCoachProps {
   gaps: string[];
   language: Language;
+  interfaceLanguage?: Language;
   resumeText: string;
   jobDescriptionText: string;
+  analysisKey: string;
+  accessToken?: string;
 }
 
 const STRINGS: Record<
@@ -58,19 +61,23 @@ const STRINGS: Record<
 
 type Status = "idle" | "loading" | "done" | "error";
 
-export default function SkillCoach({ gaps, language, resumeText, jobDescriptionText }: SkillCoachProps) {
-  const t = STRINGS[language];
+export default function SkillCoach({ gaps, language, interfaceLanguage = language, resumeText, jobDescriptionText, analysisKey, accessToken }: SkillCoachProps) {
+  const t = STRINGS[interfaceLanguage];
   const [status, setStatus] = useState<Status>("idle");
   const [data, setData] = useState<SkillCoachResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // A new analysis (new gaps) invalidates any previous plan.
-  const gapKey = gaps.join("|");
+  const request = useRef<AbortController | null>(null);
+  const contextKey = JSON.stringify([analysisKey, gaps, language, resumeText, jobDescriptionText]);
+  const currentKey = useRef(contextKey);
+  currentKey.current = contextKey;
   useEffect(() => {
+    request.current?.abort();
     setStatus("idle");
     setData(null);
     setError(null);
-  }, [gapKey]);
+    return () => { request.current?.abort(); };
+  }, [contextKey]);
 
   // Resolve a cited source_slug back to its retrieved card (name + similarity).
   const sourcesBySlug = useMemo(() => {
@@ -80,12 +87,17 @@ export default function SkillCoach({ gaps, language, resumeText, jobDescriptionT
   }, [data]);
 
   const generate = async () => {
+    request.current?.abort();
+    const controller = new AbortController();
+    request.current = controller;
+    const key = contextKey;
     setStatus("loading");
     setError(null);
     try {
       const response = await fetch("/api/skill-coach", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}) },
+        signal: controller.signal,
         body: JSON.stringify({
           skill_gaps: gaps,
           language,
@@ -98,9 +110,11 @@ export default function SkillCoach({ gaps, language, resumeText, jobDescriptionT
         throw new Error(body?.detail ?? `Request failed with status ${response.status}`);
       }
       const result: SkillCoachResult = await response.json();
+      if (controller.signal.aborted || currentKey.current !== key) return;
       setData(result);
       setStatus("done");
     } catch (err) {
+      if (controller.signal.aborted || currentKey.current !== key) return;
       setError(err instanceof Error ? err.message : "Unexpected error — please try again.");
       setStatus("error");
     }
@@ -136,6 +150,7 @@ export default function SkillCoach({ gaps, language, resumeText, jobDescriptionT
         <div className="mt-3 flex items-center gap-2.5">
           <span className="h-2 w-2 rounded-full bg-cobalt animate-pulse" aria-hidden="true" />
           <p className="text-xs font-medium text-cobalt">{t.loading}</p>
+          <button type="button" onClick={() => { request.current?.abort(); setStatus("idle"); }} className="focus-ring ml-auto rounded text-xs text-cobalt">{interfaceLanguage === "de" ? "Abbrechen" : "Cancel"}</button>
         </div>
       )}
 

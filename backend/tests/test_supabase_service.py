@@ -130,3 +130,19 @@ async def test_touch_resume_issues_patch(env):
     with p:
         await svc.touch_resume("user-123", "resume-1")
     client.patch.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("result", [3, None])
+async def test_reserve_quota_rpc_contract(env, result):
+    response = _fake_response()
+    response.json.return_value = result
+    p, client = _patch_client({"post": response})
+    with p:
+        assert await svc.reserve_quota("guest:hash", "coach", 5) == result
+    client.post.assert_awaited_once_with(
+        "https://proj.supabase.co/rest/v1/rpc/reserve_ai_quota",
+        json={"p_subject": "guest:hash", "p_operation": "coach", "p_limit": 5},
+        headers=svc._service_headers(),
+    )
+    response.raise_for_status.assert_called_once()

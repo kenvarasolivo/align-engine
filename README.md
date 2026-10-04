@@ -13,9 +13,11 @@ ALIGN reads a job description against your resume, shows exactly where you match
 *   **Draft preferences:** Choose Neutral (default), Direct, or Friendly wording and optionally add personal motivation. Preferences are restored from saved history for regeneration. Letters have a 270-word body ceiling without a forced minimum; the existing export layout and rich-text pagination remain unchanged.
 *   **PDF and Word downloads:** Preview and export the current edited draft as a one-page A4 PDF or editable `.docx`. Cover letters use a right-aligned sender and date, a left-aligned recipient, a bold subject, and extra space before the subject and sign-off. Filenames follow `Anschreiben_Company_Applicant`, using names from the draft and omitting missing details. The layout adjusts spacing and font size (10–11.5 pt) to fit; drafts that exceed a readable single page must be shortened before downloading. Exports run in the browser, including for guests.
 *   **Skill Coach (RAG):** Turns each skill gap into a grounded upskilling plan. Gaps are embedded and matched against a curated knowledge base in **pgvector** (cosine KNN); Gemini writes advice drawn *only* from the retrieved cards and cites its source — auditable, not hallucinated.
-*   **Accounts (optional):** Email/password login via Supabase Auth. Guests get the full analyzer with nothing persisted; signed-in users get history, a resume vault, saved jobs, and insights.
+*   **Accounts (optional):** Email/password login via Supabase Auth. Guests can analyze and export without saved application history; signed-in users get history, a resume vault, saved jobs, and insights. Guest quota counters store only a keyed hash of the network address, never application content.
 *   **History, vault & insights:** Every run is snapshotted and reloadable; resumes and jobs are reusable; insights aggregate your most-matched skills vs. recurring gaps, plus token usage and estimated cost.
-*   **Quota & usage tracking:** Append-only run log with a daily per-user limit (`DAILY_ANALYSIS_LIMIT`, default 20, resets midnight UTC) — keeps the project within the Gemini free tier.
+*   **Quota & usage tracking:** Atomic daily reservations cap analysis and coaching attempts independently before any AI call. Defaults: 20 analyses and 20 learning plans per signed-in user; 5 of each per guest network address. Limits reset at midnight UTC. Failures and cancellations count as attempts; a validation retry stays within the same reservation. The append-only usage log continues to record successful signed-in analyses for cost estimates.
+*   **Safer editing:** Signed-in draft saves run in order with visible save/retry status. Pending edits are flushed before switching sections, opening another analysis, generating again, or signing out. Unsent edits are kept on the device until synced and can be recovered by reopening their analysis in History. Guests can export their drafts and receive a warning before edited drafts are replaced or discarded.
+*   **Verified AI output:** Resume quotes are checked against normalized resume text. Emails stay under 200 words; cover-letter bodies stay within 270. Failed evidence/length checks get one corrective generation attempt. Matches and gaps can be empty instead of forcing unsupported entries. Existing results remain attached to their original inputs, and changing inputs marks them outdated.
 
 ---
 
@@ -54,6 +56,10 @@ For an existing installation, run [`supabase/migrations/20261004_application_sta
 Run [`supabase/migrations/20261004_rich_drafts.sql`](supabase/migrations/20261004_rich_drafts.sql) as well to save rich draft formatting in history. The editor offers Arial, Times New Roman and Calibri using embedded open, metrically compatible fonts (Liberation Sans, Tinos and Carlito), so the browser and PDF use the same font files. PDF exports preserve the editor's measured wrapping, manual line breaks, alignment and typography; content exceeding A4 continues onto subsequent pages without shrinking or truncation.
 
 Run [`supabase/migrations/20261004_draft_preferences.sql`](supabase/migrations/20261004_draft_preferences.sql) before deploying draft preferences to an existing database. It adds optional motivation and a Neutral default for older analyses.
+
+Run [`supabase/migrations/20261004_ai_quotas.sql`](supabase/migrations/20261004_ai_quotas.sql) **before deploying these backend changes**. It adds service-role-only atomic quota reservations and seeds today's existing analysis usage. It is safe to rerun. Fresh installations include it in `schema.sql`. Without this migration, a configured backend returns an actionable temporary-unavailable response rather than allowing unbounded AI calls.
+
+Optional quota settings: `DAILY_COACH_LIMIT=20`, `GUEST_DAILY_ANALYSIS_LIMIT=5`, `GUEST_DAILY_COACH_LIMIT=5`. `QUOTA_HASH_SECRET` can supply a dedicated stable hash secret; otherwise the backend uses the service-role key. On Vercel, guest identity uses the platform's [`x-vercel-forwarded-for`](https://vercel.com/docs/headers/request-headers#x-vercel-forwarded-for) header. Other hosts use the request's client address; configure trusted proxy forwarding at the server layer and set `ENVIRONMENT=production`. Production requires Supabase-backed shared counters; only guest-only local development without Supabase uses process-local counters.
 
 ### 2. Backend (FastAPI)
 
@@ -126,6 +132,8 @@ Open **http://localhost:5173** — the Vite dev server proxies `/api/*` to the b
 
 ## 🧪 Testing
 
+Frontend checks (from `frontend/`): `npm test` and `npm run build`. Tests cover export layout, serial draft saves and recovery, example inputs, generation cancellation, stale result handling, coaching authentication/context, and quota error messages. Component interactions use jsdom; they do not replace a browser layout check on mobile and desktop.
+
 The backend ships with an offline `pytest` suite (no real Gemini or Supabase calls) focused on the LLM boundary — schema enforcement, golden-set regression over recorded model outputs, and full API-pipeline tests with the AI mocked.
 
 ```powershell
@@ -161,8 +169,8 @@ It calls the real Gemini API and reports schema-validity, structural-compliance,
 
 ## 📖 Usage
 
-1.  Sign in (or **Continue as guest** — fully functional, nothing saved).
-2.  Pick a **mode** (Anschreiben or Email Outreach) and a **language** (EN / DE) in the header.
+1.  Sign in (or **Continue as guest** — daily limits apply; export drafts to keep them).
+2.  Pick a **mode** (Anschreiben or Email Outreach) and a **language** (EN / DE) in the workspace controls. One language choice controls the interface and new output; existing drafts keep their original language.
 3.  Paste your resume (top-left) and the job description (bottom-left) — signed-in users can **Save** either to their vault.
 4.  Hit **Run Alignment Analysis**.
 5.  Review the **Semantic Analysis** tab (top matches, crucial gaps), then refine the result in the **Draft Editor** tab. Use **Preview**, **Download PDF**, or **Download Word** to export your edits. For cover letters, separate sender, recipient, date, subject, greeting, body paragraphs and sign-off with blank lines; each address line belongs on its own line. Start the subject with `Bewerbung`, `Application for`, `Betreff:` or `Subject:`. Word files remain editable; changes or substituted fonts in Word can change pagination.
@@ -187,9 +195,9 @@ It calls the real Gemini API and reports schema-validity, structural-compliance,
 }
 ```
 
-Returns `{ "matching_skills": [...], "skill_gaps": [...], "generated_draft": "...", "analysis_id": "...", "usage": { "used_today": 3, "daily_limit": 20 }, "prompt_tokens": 1234, "output_tokens": 567 }` (persistence fields are `null` for guests). Responds `429` when the daily quota is exhausted.
+Returns `{ "matching_skills": [...], "skill_gaps": [...], "generated_draft": "...", "analysis_id": "...", "usage": { "used_today": 3, "daily_limit": 20 }, "prompt_tokens": 1234, "output_tokens": 567 }`. Guest `analysis_id` is `null`; `usage` reports their network's daily analysis attempts. Responds `429` with `Retry-After` when the daily quota is exhausted, or `503` if shared quota storage is unavailable.
 
-`POST /api/skill-coach` — retrieval-augmented upskilling guidance for a set of skill gaps (typically the `skill_gaps` from an `/analyze` run).
+`POST /api/skill-coach` — retrieval-augmented upskilling guidance for a set of skill gaps (typically the `skill_gaps` from an `/analyze` run). Send the optional Supabase Bearer token to use the signed-in coaching allowance; otherwise the guest network allowance applies. Coaching has its own daily quota, independent of analysis.
 
 ```json
 {

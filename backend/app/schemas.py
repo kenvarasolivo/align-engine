@@ -44,6 +44,7 @@ class SkillMatch(BaseModel):
 
     skill: str = Field(
         ...,
+        min_length=1,
         description=(
             "Short tag-style phrase (2-4 words) naming an alignment present in BOTH the resume "
             "and the job description, written in the requested output language."
@@ -51,8 +52,9 @@ class SkillMatch(BaseModel):
     )
     evidence: str = Field(
         ...,
+        min_length=1,
         description=(
-            "A short verbatim quote (or the closest phrase) FROM THE RESUME that proves the "
+            "A short exact verbatim quote FROM THE RESUME that proves the "
             "candidate has this skill. Must be drawn from the resume text — never invented. "
             "Keep it under ~15 words; written in the resume's own language."
         ),
@@ -82,21 +84,24 @@ class AnalysisResponse(BaseModel):
     )
     matching_skills: List[SkillMatch] = Field(
         ...,
+        max_length=3,
         description=(
-            "Exactly the top 3 strongest technical/professional alignments that appear in BOTH "
+            "Up to 3 strongest technical/professional alignments that appear in BOTH "
             "the resume and the job description, each paired with verbatim resume evidence."
         ),
     )
     skill_gaps: List[str] = Field(
         ...,
+        max_length=5,
         description=(
-            "The 3 to 5 most crucial skills or keywords the job description demands but the "
+            "Up to 5 crucial skills or keywords the job description demands but the "
             "resume does not credibly evidence. Short tag-style phrases, written in the "
             "requested output language."
         ),
     )
     generated_draft: str = Field(
         ...,
+        min_length=1,
         description=(
             "The complete tailored outreach asset (cover letter or email) following the mode "
             "rules, written entirely in the requested output language."

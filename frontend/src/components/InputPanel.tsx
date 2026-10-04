@@ -21,6 +21,8 @@ interface InputPanelProps {
   jobTitle: string;
   onJobTitleChange: (value: string) => void;
   onAnalyze: () => void;
+  onCancel: () => void;
+  onUseExample: () => void;
   isLoading: boolean;
   error: string | null;
   /** True when the user is signed in and can persist to Supabase. */
@@ -74,7 +76,7 @@ const STRINGS: Record<
     jobTitlePlaceholder: "e.g. Acme — Platform Engineer",
     titleLabel: "Title",
     formatLabel: "Format",
-    langLabel: "Output language",
+    langLabel: "Interface & output language",
     coverLetterOpt: "Cover letter",
     emailOpt: "Email",
     ctaAnschreiben: "Generate cover letter",
@@ -99,7 +101,7 @@ const STRINGS: Record<
     jobTitlePlaceholder: "z. B. Acme — Platform Engineer",
     titleLabel: "Titel",
     formatLabel: "Format",
-    langLabel: "Ausgabesprache",
+    langLabel: "Sprache für Oberfläche & Ausgabe",
     coverLetterOpt: "Anschreiben",
     emailOpt: "E-Mail",
     ctaAnschreiben: "Anschreiben erstellen",
@@ -181,7 +183,7 @@ function TitleField({
 }) {
   return (
     <div className="flex items-center gap-2.5 px-5 pb-2">
-      <span className="label-caps shrink-0 text-charcoal/45">{label}</span>
+      <span className="label-caps shrink-0">{label}</span>
       <input
         type="text"
         value={value}
@@ -189,7 +191,7 @@ function TitleField({
         placeholder={placeholder}
         aria-label={label}
         spellCheck={false}
-        className="flex-1 min-w-0 h-7 rounded-md border border-transparent bg-transparent px-1.5 text-sm font-medium text-charcoal outline-none transition-colors duration-150 placeholder:font-normal placeholder:text-charcoal/30 hover:border-hairline focus:border-cobalt/50 focus:bg-panel focus:ring-4 focus:ring-cobalt/10"
+        className="flex-1 min-w-0 h-7 rounded-md border border-transparent bg-transparent px-1.5 text-sm font-medium text-charcoal outline-none transition-colors duration-150 placeholder:font-normal placeholder:text-charcoal/65 hover:border-hairline focus:border-cobalt/50 focus:bg-panel focus:ring-4 focus:ring-cobalt/10"
       />
     </div>
   );
@@ -268,6 +270,8 @@ export default function InputPanel({
   jobTitle,
   onJobTitleChange,
   onAnalyze,
+  onCancel,
+  onUseExample,
   isLoading,
   error,
   canSave,
@@ -337,7 +341,7 @@ export default function InputPanel({
     );
   };
 
-  const canSubmit = !isLoading && resumeText.trim().length > 0 && jobDescriptionText.trim().length > 0;
+  const canSubmit = !isLoading && !isExtracting && resumeText.trim().length > 0 && jobDescriptionText.trim().length > 0;
 
   const runSave = async (
     save: () => Promise<boolean>,
@@ -351,7 +355,7 @@ export default function InputPanel({
   };
 
   const uploadResumeFile = async (file: File) => {
-    if (isExtracting) return;
+    if (isExtracting || isLoading) return;
     setIsExtracting(true);
     setUploadError(null);
 
@@ -431,7 +435,7 @@ export default function InputPanel({
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              disabled={isExtracting}
+            disabled={isExtracting || isLoading}
               className={`btn-secondary px-2.5 py-1 text-xs ${
                 isExtracting ? "text-cobalt" : "hover:text-cobalt hover:border-cobalt/40"
               }`}
@@ -611,6 +615,12 @@ export default function InputPanel({
             <p className="text-xs leading-snug text-danger-strong">{error}</p>
           </div>
         )}
+        {!resumeText.trim() && !jobDescriptionText.trim() && <button type="button" onClick={onUseExample} className="focus-ring mb-3 rounded-md text-sm font-medium text-cobalt">{language === "de" ? "Mit Beispieldaten ausprobieren" : "Try with example inputs"}</button>}
+        <details className="mb-3 text-xs leading-relaxed text-charcoal/75">
+          <summary className="focus-ring cursor-pointer rounded-md">{language === "de" ? "Was passiert mit meinen Daten?" : "What happens to my data?"}</summary>
+          <p className="mt-2">{language === "de" ? "Für Analyse und Lernplan werden Ihre Texte und optionalen Angaben an Google Gemini gesendet. Hochgeladene Dateien werden auf unserem Server in Text umgewandelt. Angemeldet werden Analysen im Supabase-Verlauf gespeichert; ungesendete Entwurfsänderungen bleiben bis zur Synchronisierung auf diesem Gerät. Gäste erhalten keinen gespeicherten Verlauf. Exportieren Sie Ihren Entwurf, um ihn zu behalten." : "Analysis and learning plans send your text and optional context to Google Gemini. Uploaded files are converted to text on our server. Signed-in analyses are saved in Supabase history; unsent draft edits stay on this device until synced. Guests have no saved history. Export your draft to keep it."}</p>
+          <p className="mt-2">{language === "de" ? "Tägliche Limits gelten für Generierungsversuche, auch bei Fehlern oder Abbruch, und werden um 00:00 UTC zurückgesetzt. Gäste teilen das Limit ihrer Netzwerkadresse; dafür speichern wir nur einen geschützten Hash." : "Daily limits count generation attempts, including failures or cancellations, and reset at 00:00 UTC. Guests share a limit by network address; only a keyed hash is stored for that counter."}</p>
+        </details>
         <button
           type="button"
           onClick={onAnalyze}
@@ -643,6 +653,7 @@ export default function InputPanel({
             </>
           )}
         </button>
+        {isLoading && <button type="button" onClick={onCancel} className="focus-ring mt-2 w-full rounded-lg py-2 text-sm font-medium text-charcoal">{language === "de" ? "Abbrechen · bisherigen Entwurf behalten" : "Cancel · keep previous draft"}</button>}
       </div>
     </section>
   );

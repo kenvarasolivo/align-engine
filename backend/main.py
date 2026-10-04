@@ -11,7 +11,7 @@ from dotenv import load_dotenv
 
 load_dotenv()  # must run before the Gemini service reads GEMINI_API_KEY
 
-from fastapi import FastAPI, File, Header, HTTPException, UploadFile
+from fastapi import FastAPI, File, Header, HTTPException, UploadFile, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.schemas import (
@@ -26,6 +26,7 @@ from app.services import supabase_service
 from app.services.extract_service import extract_text
 from app.services.gemini_service import run_analysis
 from app.services.rag_service import coach_skill_gaps
+from app.services import quota_service
 
 logger = logging.getLogger("align")
 
@@ -80,7 +81,7 @@ async def _resolve_user(authorization: str | None) -> str | None:
     if not authorization or not authorization.lower().startswith("bearer "):
         return None
     if not supabase_service.is_configured():
-        return None
+        raise HTTPException(status_code=503, detail="Sign-in verification is temporarily unavailable. Please try again shortly.")
     token = authorization.split(" ", 1)[1].strip()
     user_id = await supabase_service.get_user_id(token)
     if user_id is None:
@@ -89,20 +90,11 @@ async def _resolve_user(authorization: str | None) -> str | None:
 
 
 @app.post("/analyze", response_model=AnalyzeResult)
-async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(None)) -> AnalyzeResult:
+async def analyze(payload: AnalyzeRequest, request: Request, authorization: str | None = Header(None)) -> AnalyzeResult:
     user_id = await _resolve_user(authorization)
 
-    # Quota check before spending Gemini tokens (signed-in users only —
-    # guests are not persisted, so there is nothing to count against).
-    used_today = 0
-    limit = supabase_service.daily_limit()
-    if user_id:
-        used_today = await supabase_service.count_usage_today(user_id)
-        if used_today >= limit:
-            raise HTTPException(
-                status_code=429,
-                detail=f"Daily analysis limit reached ({limit} runs/day). Quota resets at midnight UTC.",
-            )
+    # Reserve before generation, atomically across production workers.
+    used_today, limit = await quota_service.reserve(request, user_id, "analyze")
 
     try:
         result, prompt_tokens, output_tokens = await run_analysis(payload)
@@ -113,7 +105,7 @@ async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(No
         raise HTTPException(status_code=502, detail=f"Gemini analysis failed: {exc}") from exc
 
     analysis_id: str | None = None
-    usage: UsageInfo | None = None
+    usage = UsageInfo(used_today=used_today, daily_limit=limit)
     if user_id:
         # Persistence must never lose a successful (already paid-for) analysis.
         try:
@@ -143,7 +135,6 @@ async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(No
             )
             if payload.resume_id:
                 await supabase_service.touch_resume(user_id, payload.resume_id)
-            usage = UsageInfo(used_today=used_today + 1, daily_limit=limit)
         except Exception:
             logger.exception("Failed to persist analysis for user %s", user_id)
 
@@ -157,7 +148,7 @@ async def analyze(payload: AnalyzeRequest, authorization: str | None = Header(No
 
 
 @app.post("/skill-coach", response_model=SkillCoachResponse)
-async def skill_coach(payload: SkillCoachRequest) -> SkillCoachResponse:
+async def skill_coach(payload: SkillCoachRequest, request: Request, authorization: str | None = Header(None)) -> SkillCoachResponse:
     """Retrieval-augmented coaching: ground upskilling advice for the given
     skill gaps in the pgvector knowledge base.
 
@@ -166,6 +157,8 @@ async def skill_coach(payload: SkillCoachRequest) -> SkillCoachResponse:
     (with citations). Degrades to an honest, ungrounded response when the
     knowledge base is not configured rather than hallucinating advice.
     """
+    user_id = await _resolve_user(authorization)
+    await quota_service.reserve(request, user_id, "coach")
     try:
         return await coach_skill_gaps(
             payload.skill_gaps,

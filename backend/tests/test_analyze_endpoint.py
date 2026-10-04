@@ -55,7 +55,7 @@ def test_analyze_returns_schema_valid_json(client):
     assert body["output_tokens"] == 200
     # Guest run -> no persistence metadata.
     assert body["analysis_id"] is None
-    assert body["usage"] is None
+    assert body["usage"] == {"used_today": 1, "daily_limit": 5}
 
 
 def test_analyze_rejects_invalid_payload(client):

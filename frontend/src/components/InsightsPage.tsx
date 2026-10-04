@@ -44,11 +44,11 @@ const STRINGS: Record<
 > = {
   en: {
     title: "Insights",
-    subtitle: "Aggregated across all your analyses — what jobs keep asking for, what you already bring, and what your runs cost.",
+    subtitle: "Based on your latest 200 saved analyses and 1,000 logged successful analyses. Deleted analyses are excluded from skill trends. Usage and cost estimates exclude Skill Coach and failed attempts; today means UTC.",
     loading: "Crunching your analyses…",
     loadFailed: "Could not load your insights.",
     empty: "Run a few analyses first — insights appear once there is history to aggregate.",
-    totalAnalyses: "Total analyses",
+    totalAnalyses: "Analyses in view",
     runsToday: "Runs today",
     totalTokens: "Tokens used",
     estCost: "Est. Gemini cost",
@@ -64,11 +64,11 @@ const STRINGS: Record<
   },
   de: {
     title: "Insights",
-    subtitle: "Aggregiert über alle Ihre Analysen — was Stellen immer wieder verlangen, was Sie bereits mitbringen und was Ihre Läufe kosten.",
+    subtitle: "Basierend auf den letzten 200 gespeicherten Analysen und 1.000 protokollierten erfolgreichen Analysen. Gelöschte Analysen fehlen in Kompetenztrends. Nutzung und Kostenschätzungen enthalten weder Skill-Coach noch fehlgeschlagene Versuche; heute bezieht sich auf UTC.",
     loading: "Ihre Analysen werden ausgewertet…",
     loadFailed: "Die Insights konnten nicht geladen werden.",
     empty: "Führen Sie zuerst einige Analysen durch — Insights erscheinen, sobald es Verlauf zum Aggregieren gibt.",
-    totalAnalyses: "Analysen gesamt",
+    totalAnalyses: "Analysen in Ansicht",
     runsToday: "Läufe heute",
     totalTokens: "Verbrauchte Tokens",
     estCost: "Gesch. Gemini-Kosten",

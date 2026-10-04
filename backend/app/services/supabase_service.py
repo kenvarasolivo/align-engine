@@ -112,6 +112,19 @@ async def log_usage(user_id: str, prompt_tokens: Optional[int], output_tokens: O
     response.raise_for_status()
 
 
+async def reserve_quota(subject_key: str, operation: str, limit: int) -> int | None:
+    """Atomic across workers; null means the daily limit has been reached."""
+    async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
+        response = await client.post(
+            f"{_supabase_url()}/rest/v1/rpc/reserve_ai_quota",
+            json={"p_subject": subject_key, "p_operation": operation, "p_limit": limit},
+            headers=_service_headers(),
+        )
+    response.raise_for_status()
+    used = response.json()
+    return int(used) if used is not None else None
+
+
 async def save_analysis(record: dict[str, Any]) -> Optional[str]:
     """Insert an analysis row and return its id."""
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:

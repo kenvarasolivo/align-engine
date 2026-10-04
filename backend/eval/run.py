@@ -4,8 +4,8 @@ Unlike the pytest suite (which mocks Gemini), this script calls the *live*
 model over a labelled dataset and reports three metrics:
 
   * Schema-validity rate  — share of runs that parsed into AnalysisResponse.
-  * Structural-compliance rate — share obeying the contract (top-3 matches
-    with evidence, 3-5 gaps, in-range score).
+  * Structural-compliance rate — share obeying the contract (up to 3 matches
+    with evidence, up to 5 gaps, in-range score).
   * Skill-gap hit-rate    — of the gaps we KNOW the resume is missing, how
     many the model actually surfaced (extraction quality).
 
@@ -69,9 +69,9 @@ class CaseResult:
 def evaluate_case(case: dict, result: AnalysisResponse) -> CaseResult:
     """Score a successfully-parsed model result against a labelled case."""
     structural_ok = (
-        len(result.matching_skills) == 3
-        and all(m.skill and m.evidence for m in result.matching_skills)
-        and 3 <= len(result.skill_gaps) <= 5
+        len(result.matching_skills) <= 3
+        and all(m.skill.strip() and m.evidence.strip() for m in result.matching_skills)
+        and len(result.skill_gaps) <= 5
         and 0 <= result.match_score <= 100
     )
 
@@ -131,7 +131,7 @@ def print_report(results: list[CaseResult], summary: dict) -> None:
         if not r.schema_valid:
             print(f"{r.id:<28} {'FAIL':>5} {'-':>6} {'-':>6} {'-':>6}  ({r.error})")
             continue
-        band = "" if r.score_in_band is None else ("✓" if r.score_in_band else "✗band")
+        band = "" if r.score_in_band is None else (" in-band" if r.score_in_band else " out-of-band")
         print(
             f"{r.id:<28} {'ok':>5} {('ok' if r.structural_ok else 'BAD'):>6} "
             f"{f'{r.gap_hits}/{r.gap_total}':>6} {f'{r.match_score}{band}':>6}"

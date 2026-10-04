@@ -14,10 +14,11 @@ interface Props {
   onChange: (text: string, document: DraftDocument) => void;
   mode: Mode;
   language: Language;
+  exportLanguage?: Language;
   isLoading: boolean;
 }
 
-export default function RichDraftEditor({ draft, document: value, onChange, mode, language, isLoading }: Props) {
+export default function RichDraftEditor({ draft, document: value, onChange, mode, language, exportLanguage = language, isLoading }: Props) {
   const de = language === "de";
   const viewport = useRef<HTMLDivElement>(null);
   const preview = useRef<HTMLDialogElement>(null);
@@ -93,13 +94,13 @@ export default function RichDraftEditor({ draft, document: value, onChange, mode
       const measured = snapshotEditor(editor.view.dom);
       setSnapshot(measured);
       const exporter = await import("../lib/richDraftExport");
-      const bytes = action === "word" ? await exporter.makeRichWord(measured, language)
+      const bytes = action === "word" ? await exporter.makeRichWord(measured, exportLanguage)
         : await exporter.makeRichPdf(measured, await exporter.loadRichExportFonts());
       if (action === "preview") {
         setPreviewUrl(URL.createObjectURL(new Blob([new Uint8Array(bytes)], { type: "application/pdf" })));
       } else {
         const { saveDownload, exportFilename, parseDraft } = await import("../lib/draftExport");
-        const filename = exportFilename({ blocks: parseDraft(draft, mode).map((block) => ({ ...block, lines: [], after: 0 })), fontSize: 11, lineHeight: 14.96, height: 0 }, mode, language);
+        const filename = exportFilename({ blocks: parseDraft(draft, mode).map((block) => ({ ...block, lines: [], after: 0 })), fontSize: 11, lineHeight: 14.96, height: 0 }, mode, exportLanguage);
         saveDownload(bytes, action === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.wordprocessingml.document", `${filename}.${action === "pdf" ? "pdf" : "docx"}`);
       }
     } catch (failure) {

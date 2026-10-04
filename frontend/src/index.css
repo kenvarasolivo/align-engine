@@ -181,7 +181,7 @@
     color: #0a0a0a;
   }
   .editor-surface::placeholder {
-    color: rgb(10 10 10 / 0.4);
+    color: rgb(10 10 10 / 0.6);
   }
   .editor-surface::selection {
     background-color: rgb(0 82 255 / 0.16);
@@ -189,7 +189,7 @@
 
   /* Ambient caps label — section headers, chrome metadata */
   .label-caps {
-    @apply text-2xs font-semibold uppercase tracking-[0.14em] text-charcoal/45 select-none;
+    @apply text-xs font-semibold uppercase tracking-[0.1em] text-charcoal/75 select-none;
   }
 
   /* Button language: primary (cobalt, one per region), secondary (bordered) */

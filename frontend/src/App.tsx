@@ -12,6 +12,8 @@ import InsightsPage from "./components/InsightsPage";
 import { LogoMark } from "./components/Logo";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import * as db from "./lib/db";
+import { DraftSaver, hasRecovery, readRecovery, storeRecovery, type SaveStatus } from "./lib/draftSaver";
+import { snapshotKey, type AnalysisSnapshot } from "./lib/analysisSnapshot";
 import type {
   AnalysisResult,
   AnalysisRow,
@@ -112,6 +114,13 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
   const [draft, setDraft] = useState("");
   const [draftDocument, setDraftDocument] = useState<DraftDocument | null>(null);
   const [draftSaveError, setDraftSaveError] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const [resultSnapshot, setResultSnapshot] = useState<AnalysisSnapshot | null>(null);
+  const [recoveryAvailable, setRecoveryAvailable] = useState(false);
+  const [resultGeneration, setResultGeneration] = useState(0);
+  const saver = useRef<DraftSaver | null>(null);
+  const analysisRequest = useRef<AbortController | null>(null);
+  const requestVersion = useRef(0);
   const [activeTab, setActiveTab] = useState<OutputTab>("analysis");
   const [usage, setUsage] = useState<UsageInfo | null>(null);
 
@@ -139,32 +148,83 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     };
   }, [session?.user.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Autosave the edited draft into the analysis history row.
+  // Serialize writes and keep unsent signed-in edits recoverable on this device.
   useEffect(() => {
-    if (!session || !result?.analysis_id) return;
-    if (draft === result.generated_draft && !draftDocument) return;
-    const analysisId = result.analysis_id;
-    const timer = setTimeout(() => {
-      db.updateFinalDraft(analysisId, draft, draftDocument)
-        .then(() => setDraftSaveError(false))
-        .catch(() => setDraftSaveError(true));
-    }, 1200);
-    return () => clearTimeout(timer);
-  }, [draft, draftDocument, session, result]);
+    if (!user) { saver.current = null; return; }
+    const userId = user.id;
+    setRecoveryAvailable(hasRecovery(userId));
+    const writer = new DraftSaver(
+      edit => db.updateFinalDraft(edit.id, edit.text, edit.document),
+      status => { setSaveStatus(status); setDraftSaveError(status === "error"); },
+      (edit, saved) => { storeRecovery(userId, edit, saved); setRecoveryAvailable(hasRecovery(userId)); },
+    );
+    saver.current = writer;
+    const unload = (event: BeforeUnloadEvent) => {
+      if (writer.dirty) { event.preventDefault(); event.returnValue = ""; }
+    };
+    const hidden = () => { if (document.visibilityState === "hidden") void writer.flush().catch(() => {}); };
+    window.addEventListener("beforeunload", unload);
+    document.addEventListener("visibilitychange", hidden);
+    return () => {
+      window.removeEventListener("beforeunload", unload);
+      document.removeEventListener("visibilitychange", hidden);
+      void writer.flush().catch(() => {});
+      writer.dispose();
+    };
+  }, [user?.id]);
+
+  useEffect(() => () => { analysisRequest.current?.abort(); requestVersion.current += 1; }, []);
+  const guestHasEdits = !user && Boolean(draft.trim()) && (draft !== (result?.generated_draft ?? "") || draftDocument !== null);
+  useEffect(() => {
+    if (!guestHasEdits) return;
+    const protect = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    window.addEventListener("beforeunload", protect);
+    return () => window.removeEventListener("beforeunload", protect);
+  }, [guestHasEdits]);
+  const canReplaceGuestDraft = () => !guestHasEdits || window.confirm(language === "de" ? "Ihr bearbeiteter Gastentwurf wird ersetzt. Exportieren Sie ihn zuerst, wenn Sie ihn behalten möchten. Fortfahren?" : "Your edited guest draft will be replaced. Export it first if you want to keep it. Continue?");
+  const flushDraft = async () => {
+    try { await saver.current?.flush(); return true; }
+    catch { setDraftSaveError(true); setError(language === "de" ? "Der Entwurf konnte nicht gespeichert werden. Bitte erneut speichern oder vor dem Verlassen exportieren." : "Your draft could not be saved. Retry saving or export it before leaving."); return false; }
+  };
+  const prepareToLeave = async () => {
+    if (await flushDraft()) return true;
+    const hasLocalCopy = Boolean(user && result?.analysis_id && readRecovery(user.id, result.analysis_id));
+    const message = hasLocalCopy
+      ? (language === "de" ? "Änderungen konnten nicht synchronisiert werden. Eine Wiederherstellungskopie bleibt auf diesem Gerät und kann über den Verlauf geöffnet werden. Trotzdem fortfahren?" : "Changes could not sync. A recovery copy will remain on this device and can be reopened from History. Continue anyway?")
+      : (language === "de" ? "Änderungen konnten nicht gespeichert werden. Exportieren Sie den Entwurf zuerst, um ihn zu behalten. Trotzdem fortfahren und ungespeicherte Änderungen verwerfen?" : "Changes could not be saved. Export the draft first to keep it. Continue anyway and discard unsaved changes?");
+    if (!window.confirm(message)) return false;
+    saver.current?.deferRecovery();
+    return true;
+  };
+  const currentSnapshot: AnalysisSnapshot = { resume: resumeText, job: jobDescriptionText, mode, language, motivation: personalMotivation, style: writingStyle };
+  const resultIsStale = Boolean(resultSnapshot && snapshotKey(resultSnapshot) !== snapshotKey(currentSnapshot));
+  const cancelAnalysis = () => {
+    requestVersion.current += 1;
+    analysisRequest.current?.abort();
+    analysisRequest.current = null;
+    setIsLoading(false);
+  };
 
   const handleAnalyze = async () => {
     if (isLoading || !resumeText.trim() || !jobDescriptionText.trim()) return;
+    if (!canReplaceGuestDraft()) return;
 
     setIsLoading(true);
     setError(null);
+    const version = ++requestVersion.current;
+    const controller = new AbortController();
+    analysisRequest.current = controller;
+    const snapshot = { ...currentSnapshot };
 
     try {
+      if (!await flushDraft() || version !== requestVersion.current) return;
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
 
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers,
+        signal: controller.signal,
         body: JSON.stringify({
           resume_text: resumeText,
           job_description_text: jobDescriptionText,
@@ -185,16 +245,21 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       }
 
       const data: AnalysisResult = await response.json();
+      if (version !== requestVersion.current) return;
       setResult(data);
+      setResultGeneration(version);
+      setSaveStatus("idle");
+      setResultSnapshot(snapshot);
       setDraft(data.generated_draft);
       setDraftDocument(null);
       setDraftSaveError(false);
       setActiveTab("analysis");
       if (data.usage) setUsage(data.usage);
     } catch (err) {
+      if (version !== requestVersion.current || controller.signal.aborted) return;
       setError(err instanceof Error ? err.message : "Unexpected error — please try again.");
     } finally {
-      setIsLoading(false);
+      if (version === requestVersion.current) { setIsLoading(false); analysisRequest.current = null; }
     }
   };
 
@@ -245,7 +310,10 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setView("workspace");
   };
 
-  const loadAnalysis = (row: AnalysisRow) => {
+  const loadAnalysis = async (row: AnalysisRow) => {
+    if (!await prepareToLeave()) return;
+    cancelAnalysis();
+    setResultGeneration(value => value + 1);
     setResumeText(row.resume_snapshot);
     setJobDescriptionText(row.job_description_snapshot);
     // The analysis only stores the (job-derived) history title; the resume
@@ -256,6 +324,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setLanguage(row.language);
     setPersonalMotivation(row.personal_motivation ?? "");
     setWritingStyle(row.writing_style ?? "neutral");
+    setResultSnapshot({ resume: row.resume_snapshot, job: row.job_description_snapshot, mode: row.mode, language: row.language, motivation: row.personal_motivation ?? "", style: row.writing_style ?? "neutral" });
     setActiveResumeId(row.resume_id);
     setActiveJobId(row.job_description_id);
     setResult({
@@ -267,14 +336,20 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
       generated_draft: row.generated_draft,
       analysis_id: row.id,
     });
-    setDraft(row.final_draft ?? row.generated_draft);
-    setDraftDocument(row.draft_document ?? null);
+    const recovery = user ? readRecovery(user.id, row.id) : null;
+    setDraft(recovery?.text ?? row.final_draft ?? row.generated_draft);
+    setDraftDocument(recovery ? recovery.document : row.draft_document ?? null);
+    if (recovery) saver.current?.schedule(recovery);
+    else setSaveStatus("idle");
     setDraftSaveError(false);
     setActiveTab("draft");
     setView("workspace");
+    setError(null);
   };
 
   const handleSignOut = async () => {
+    if (!await prepareToLeave()) return;
+    cancelAnalysis();
     await signOut();
     navigate("/");
     // Leave nothing of the previous user behind on a shared machine.
@@ -288,6 +363,7 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     setActiveResumeId(null);
     setActiveJobId(null);
     setResult(null);
+    setResultSnapshot(null);
     setDraft("");
     setDraftDocument(null);
     setDraftSaveError(false);
@@ -316,15 +392,22 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
     <div className="h-screen flex flex-col overflow-hidden bg-surface">
       <Header
         view={effectiveView}
-        onViewChange={setView}
+        onViewChange={async next => { if (next === view || await flushDraft()) setView(next); }}
         language={language}
-        onLanguageChange={setLanguage}
         userEmail={session?.user.email ?? null}
         usage={usage}
         onSignOut={handleSignOut}
         onGoToLogin={exitGuest}
-        onLogoClick={() => navigate("/")}
+        onLogoClick={async () => { if (canReplaceGuestDraft() && await prepareToLeave()) { cancelAnalysis(); navigate("/"); } }}
       />
+
+      {draftSaveError && (effectiveView !== "workspace" || activeTab !== "draft") && <div role="alert" className="flex flex-wrap items-center gap-3 border-b border-danger-border bg-danger-soft px-4 py-2 text-sm text-danger-strong">
+        <span>{language === "de" ? "Entwurfsänderungen sind noch nicht gespeichert." : "Draft changes have not been saved yet."}</span>
+        <button type="button" onClick={() => void flushDraft()} className="focus-ring rounded underline">{language === "de" ? "Erneut speichern" : "Retry save"}</button>
+        <button type="button" onClick={() => { setView("workspace"); setActiveTab("draft"); }} className="focus-ring rounded underline">{language === "de" ? "Entwurf öffnen / exportieren" : "Open / export draft"}</button>
+      </div>}
+
+      {recoveryAvailable && !result && <p role="status" className="bg-cobalt-50 px-4 py-2 text-sm text-charcoal">{language === "de" ? "Ungespeicherte Änderungen sind auf diesem Gerät verfügbar. Öffnen Sie den zugehörigen Entwurf im Verlauf, um sie wiederherzustellen." : "Unsent edits are available on this device. Open their draft in History to recover them."}</p>}
 
       {effectiveView === "workspace" ? (
         <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 p-3 lg:p-4 overflow-y-auto lg:overflow-hidden">
@@ -338,14 +421,20 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
             writingStyle={writingStyle}
             onWritingStyleChange={setWritingStyle}
             resumeText={resumeText}
-            onResumeChange={setResumeText}
+            onResumeChange={text => { setResumeText(text); setActiveResumeId(null); }}
             resumeTitle={resumeTitle}
             onResumeTitleChange={setResumeTitle}
             jobDescriptionText={jobDescriptionText}
-            onJobDescriptionChange={setJobDescriptionText}
+            onJobDescriptionChange={text => { setJobDescriptionText(text); setActiveJobId(null); }}
             jobTitle={jobTitle}
             onJobTitleChange={setJobTitle}
             onAnalyze={handleAnalyze}
+            onCancel={cancelAnalysis}
+            onUseExample={() => {
+              setResumeText("Alex Morgan\nalex@example.com\n\nBackend engineer with 4 years of Python experience. Built FastAPI services and REST APIs, designed PostgreSQL schemas, and shipped Docker containers. Set up CI pipelines with GitHub Actions.");
+              setJobDescriptionText("ExampleCo — Backend Engineer\n\nWe are looking for a backend engineer with Python, REST API, PostgreSQL and Docker experience. You will build reliable services with our platform team. Kubernetes and Terraform are a plus.");
+              setResumeTitle("Example resume"); setJobTitle("ExampleCo — Backend Engineer"); setActiveResumeId(null); setActiveJobId(null);
+            }}
             isLoading={isLoading}
             error={error}
             canSave={isSignedIn}
@@ -357,17 +446,27 @@ function AppShell({ navigate, initialAuthMode }: AppShellProps) {
           />
           <OutputPanel
             language={language}
-            mode={mode}
+            mode={resultSnapshot?.mode ?? mode}
             result={result}
             draft={draft}
             draftDocument={draftDocument}
-            onDraftChange={(text, document) => { setDraft(text); setDraftDocument(document); }}
+            onDraftChange={(text, document) => {
+              setDraft(text); setDraftDocument(document);
+              if (user && result?.analysis_id) saver.current?.schedule({ id: result.analysis_id, text, document });
+            }}
             draftSaveError={draftSaveError}
+            saveStatus={saveStatus}
+            canSave={Boolean(user && result?.analysis_id)}
+            onRetrySave={() => void flushDraft()}
+            isStale={resultIsStale}
+            resultLanguage={resultSnapshot?.language ?? language}
+            analysisKey={`${result?.analysis_id ?? "guest"}:${resultGeneration}`}
+            accessToken={session?.access_token}
             activeTab={activeTab}
             onTabChange={setActiveTab}
             isLoading={isLoading}
-            resumeText={resumeText}
-            jobDescriptionText={jobDescriptionText}
+            resumeText={resultSnapshot?.resume ?? resumeText}
+            jobDescriptionText={resultSnapshot?.job ?? jobDescriptionText}
           />
         </main>
       ) : (

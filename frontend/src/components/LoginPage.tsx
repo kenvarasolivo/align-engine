@@ -188,7 +188,7 @@ export default function LoginPage({ initialMode = "signin" }: LoginPageProps) {
             Continue as guest →
           </button>
           <p className="mt-1.5 text-xs text-charcoal/40">
-            Guest sessions work fully, but nothing is saved.
+            Try the analyzer as a guest. Export drafts to keep them; daily limits apply.
           </p>
         </div>
 

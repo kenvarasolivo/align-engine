@@ -40,7 +40,7 @@ def test_authenticated_analyze_persists_and_returns_usage(client, preferences, e
     with patch.object(supabase_service, "is_configured", return_value=True), \
          patch.object(supabase_service, "get_user_id", AsyncMock(return_value="user-1")), \
          patch.object(supabase_service, "daily_limit", return_value=20), \
-         patch.object(supabase_service, "count_usage_today", AsyncMock(return_value=3)), \
+         patch.object(supabase_service, "reserve_quota", AsyncMock(return_value=4)), \
          patch.object(supabase_service, "log_usage", AsyncMock()), \
          patch.object(supabase_service, "save_analysis", AsyncMock(return_value="analysis-42")) as save, \
          patch.object(main, "run_analysis", AsyncMock(return_value=(analysis, 100, 200))):
@@ -58,7 +58,7 @@ def test_quota_exceeded_returns_429_without_calling_gemini(client):
     with patch.object(supabase_service, "is_configured", return_value=True), \
          patch.object(supabase_service, "get_user_id", AsyncMock(return_value="user-1")), \
          patch.object(supabase_service, "daily_limit", return_value=5), \
-         patch.object(supabase_service, "count_usage_today", AsyncMock(return_value=5)), \
+         patch.object(supabase_service, "reserve_quota", AsyncMock(return_value=None)), \
          patch.object(main, "run_analysis", AsyncMock()) as gemini:
         resp = client.post("/analyze", json=_payload(), headers=AUTH)
 
@@ -82,7 +82,7 @@ def test_persistence_failure_does_not_lose_paid_analysis(client):
     with patch.object(supabase_service, "is_configured", return_value=True), \
          patch.object(supabase_service, "get_user_id", AsyncMock(return_value="user-1")), \
          patch.object(supabase_service, "daily_limit", return_value=20), \
-         patch.object(supabase_service, "count_usage_today", AsyncMock(return_value=0)), \
+         patch.object(supabase_service, "reserve_quota", AsyncMock(return_value=1)), \
          patch.object(supabase_service, "log_usage", AsyncMock(side_effect=Exception("db down"))), \
          patch.object(main, "run_analysis", AsyncMock(return_value=(analysis, 1, 2))):
         resp = client.post("/analyze", json=_payload(), headers=AUTH)

@@ -1,6 +1,8 @@
 import { lazy, Suspense } from "react";
+import { useId } from "react";
 import type { AnalysisResult, DraftDocument, Language, Mode, OutputTab } from "../types";
 import SkillCoach from "./SkillCoach";
+import type { SaveStatus } from "../lib/draftSaver";
 const RichDraftEditor = lazy(() => import("./RichDraftEditor"));
 
 interface OutputPanelProps {
@@ -11,6 +13,13 @@ interface OutputPanelProps {
   onDraftChange: (value: string, document: DraftDocument) => void;
   draftDocument: DraftDocument | null;
   draftSaveError: boolean;
+  saveStatus: SaveStatus;
+  canSave: boolean;
+  onRetrySave: () => void;
+  isStale: boolean;
+  resultLanguage: Language;
+  analysisKey: string;
+  accessToken?: string;
   activeTab: OutputTab;
   onTabChange: (tab: OutputTab) => void;
   isLoading: boolean;
@@ -48,7 +57,7 @@ const STRINGS: Record<
     emptyTitle: "Ready to align",
     empty: "Run an alignment analysis to populate this panel.",
     loading: "Aligning your profile against the role…",
-    scoreLabel: "Alignment score",
+    scoreLabel: "Estimated alignment",
     matchedShort: "matched",
     gapsShort: "gaps",
     draftEmpty: "Your generated draft will appear here, ready to edit.",
@@ -66,7 +75,7 @@ const STRINGS: Record<
     emptyTitle: "Bereit zum Abgleich",
     empty: "Starten Sie eine Analyse, um dieses Panel zu füllen.",
     loading: "Profil wird mit der Stelle abgeglichen…",
-    scoreLabel: "Übereinstimmung",
+    scoreLabel: "Geschätzte Übereinstimmung",
     matchedShort: "passend",
     gapsShort: "Lücken",
     draftEmpty: "Ihr generierter Entwurf erscheint hier und kann direkt bearbeitet werden.",
@@ -200,6 +209,13 @@ export default function OutputPanel({
   onDraftChange,
   draftDocument,
   draftSaveError,
+  saveStatus,
+  canSave,
+  onRetrySave,
+  isStale,
+  resultLanguage,
+  analysisKey,
+  accessToken,
   activeTab,
   onTabChange,
   isLoading,
@@ -207,6 +223,7 @@ export default function OutputPanel({
   jobDescriptionText,
 }: OutputPanelProps) {
   const t = STRINGS[language];
+  const panelId = useId();
 
   const tabs: { value: OutputTab; label: string }[] = [
     { value: "analysis", label: t.analysisTab },
@@ -224,6 +241,17 @@ export default function OutputPanel({
             key={value}
             type="button"
             role="tab"
+            id={`${panelId}-${value}-tab`}
+            aria-controls={`${panelId}-content`}
+            tabIndex={activeTab === value ? 0 : -1}
+            onKeyDown={event => {
+              if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+                event.preventDefault();
+                const next = event.key === "Home" ? "analysis" : event.key === "End" ? "draft" : value === "analysis" ? "draft" : "analysis";
+                onTabChange(next);
+                document.getElementById(`${panelId}-${next}-tab`)?.focus();
+              }
+            }}
             aria-selected={activeTab === value}
             onClick={() => onTabChange(value)}
             className={`focus-ring px-3 py-1.5 text-sm font-medium rounded-lg transition-all duration-150 ${
@@ -237,9 +265,14 @@ export default function OutputPanel({
         ))}
       </div>
 
+      {result && <div className="border-b border-hairline px-4 py-2 text-xs text-charcoal/75">
+        {mode === "anschreiben" ? t.coverLetter : t.email} · {resultLanguage === "de" ? "Deutsch" : "English"}
+        {isStale && <p role="status" className="mt-1 font-medium text-warning-strong">{language === "de" ? "Eingaben geändert. Dieses Ergebnis gehört zu den vorherigen Eingaben. Generieren Sie erneut, um es zu aktualisieren; Ihr Entwurf bleibt bearbeitbar." : "Inputs changed. This result belongs to the previous inputs. Generate again to update it; your draft is still editable."}</p>}
+      </div>}
+
       {/* Tab content */}
       {activeTab === "analysis" ? (
-        <div className="flex-1 min-h-0 overflow-y-auto bg-surface/40">
+        <div id={`${panelId}-content`} role="tabpanel" aria-labelledby={`${panelId}-analysis-tab`} className="flex-1 min-h-0 overflow-y-auto bg-surface/40">
           {isLoading ? (
             <AnalysisSkeleton label={t.loading} />
           ) : result ? (
@@ -249,6 +282,7 @@ export default function OutputPanel({
                 <ScoreRing pct={scorePct} />
                 <div className="min-w-0">
                   <p className="label-caps">{t.scoreLabel}</p>
+                  <p className="mt-1 text-xs text-charcoal/75">{language === "de" ? "KI-Schätzung anhand Ihrer Unterlagen, keine Einstellungswahrscheinlichkeit." : "AI estimate from these documents, not a hiring probability."}</p>
                   {result.score_rationale && (
                     <p className="mt-1 text-sm leading-relaxed text-charcoal/75">{result.score_rationale}</p>
                   )}
@@ -269,6 +303,7 @@ export default function OutputPanel({
               <div>
                 <h2 className="label-caps mb-3">{t.matchingSkills}</h2>
                 <ul className="space-y-2">
+                  {result.matching_skills.length === 0 && <li className="text-sm text-charcoal/75">{language === "de" ? "Keine belegten Übereinstimmungen in diesem Lebenslauf gefunden." : "No evidenced matches found in this resume."}</li>}
                   {result.matching_skills.map((match) => (
                     <li
                       key={match.skill}
@@ -295,6 +330,7 @@ export default function OutputPanel({
               <div>
                 <h2 className="label-caps mb-3">{t.skillGaps}</h2>
                 <ul className="space-y-2">
+                  {result.skill_gaps.length === 0 && <li className="text-sm text-charcoal/75">{language === "de" ? "Keine wesentlichen Kompetenzlücken in diesen Unterlagen gefunden." : "No significant skill gaps identified in these documents."}</li>}
                   {result.skill_gaps.map((gap) => (
                     <li
                       key={gap}
@@ -314,7 +350,10 @@ export default function OutputPanel({
               {result.skill_gaps.length > 0 && (
                 <SkillCoach
                   gaps={result.skill_gaps}
-                  language={language}
+                  language={resultLanguage}
+                  interfaceLanguage={language}
+                  analysisKey={analysisKey}
+                  accessToken={accessToken}
                   resumeText={resumeText}
                   jobDescriptionText={jobDescriptionText}
                 />
@@ -344,10 +383,14 @@ export default function OutputPanel({
           )}
         </div>
       ) : (
-        <div className="flex-1 min-h-0 flex flex-col bg-panel">
+        <div id={`${panelId}-content`} role="tabpanel" aria-labelledby={`${panelId}-draft-tab`} className="flex-1 min-h-0 flex flex-col bg-panel">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-hairline px-4 py-2 text-xs text-charcoal/75" role="status" aria-live="polite">
+            <span>{!canSave ? (language === "de" ? "Nicht im Verlauf gespeichert · zum Behalten exportieren" : "Not saved to history · export to keep") : saveStatus === "saving" || saveStatus === "pending" ? (language === "de" ? "Änderungen werden gespeichert…" : "Saving changes…") : saveStatus === "error" ? (language === "de" ? "Nicht synchronisiert · erneut speichern" : "Not synced · retry saving") : (language === "de" ? "Im Verlauf gespeichert" : "Saved to history")}</span>
+            {canSave && saveStatus === "error" && <button type="button" onClick={onRetrySave} className="focus-ring rounded text-cobalt">{language === "de" ? "Erneut speichern" : "Retry save"}</button>}
+          </div>
           {draftSaveError && <p role="alert" className="bg-danger-soft px-4 py-2 text-xs text-danger-strong">{language === "de" ? "Änderungen konnten nicht im Verlauf gespeichert werden. Ihr Entwurf bleibt hier verfügbar; exportieren Sie ihn vor dem Verlassen." : "Could not save changes to history. Your draft is still available here; export it before leaving."}</p>}
           <Suspense fallback={<p className="p-6 text-sm text-charcoal/60">{language === "de" ? "Editor wird geladen..." : "Loading editor..."}</p>}>
-            <RichDraftEditor draft={draft} document={draftDocument} onChange={onDraftChange} mode={mode} language={language} isLoading={isLoading} />
+            <RichDraftEditor draft={draft} document={draftDocument} onChange={onDraftChange} mode={mode} language={language} exportLanguage={resultLanguage} isLoading={isLoading} />
           </Suspense>
         </div>
       )}

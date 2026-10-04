@@ -125,8 +125,8 @@ export async function updateAnalysisStatus(id: string, status: ApplicationStatus
 }
 
 export async function updateFinalDraft(id: string, finalDraft: string, document?: DraftDocument | null): Promise<void> {
-  const update = { final_draft: finalDraft, ...(document ? { draft_document: document } : {}) };
-  const { error } = await client().from("analyses").update(update).eq("id", id);
+  const update = { final_draft: finalDraft, draft_document: document ?? null };
+  const { error } = await client().from("analyses").update(update).eq("id", id).select("id").single();
   if (error) throw error;
 }
 

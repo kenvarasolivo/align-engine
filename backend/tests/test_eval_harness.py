@@ -12,6 +12,7 @@ from eval.run import (
     evaluate_case,
     gap_is_hit,
     summarize,
+    print_report,
 )
 from tests.conftest import make_valid_analysis
 
@@ -45,8 +46,8 @@ def test_evaluate_case_flags_partial_gap_hits_and_band_miss():
 
 
 def test_evaluate_case_detects_structural_violation():
-    # Only 2 skill_gaps -> violates the 3-5 contract.
-    result = make_valid_analysis(skill_gaps=["Kubernetes", "Terraform"])
+    # Empty evidence still violates the contract.
+    result = make_valid_analysis(matching_skills=[{"skill": "Python", "evidence": " "}])
     scored = evaluate_case({"id": "c3", "expected_gaps": []}, result)
     assert scored.structural_ok is False
 
@@ -66,6 +67,14 @@ def test_summarize_aggregates_rates():
     assert s["gap_hit_rate"] == 3 / 4          # (2+1) / (2+2)
     assert s["score_in_band_rate"] == 0.5      # 1 of 2 banded valid cases
     assert s["avg_match_score"] == 55.0        # (70+40)/2
+
+
+def test_report_works_on_windows_ascii_console(capsys):
+    results = [CaseResult(id="sample", schema_valid=True, structural_ok=True, match_score=70, score_in_band=False)]
+    print_report(results, summarize(results))
+    output = capsys.readouterr().out
+    assert output.isascii()
+    assert "out-of-band" in output
 
 
 def test_dataset_is_well_formed():
