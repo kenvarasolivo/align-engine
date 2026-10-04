@@ -2,6 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "Align Letter";
+  src: url("/fonts/LiberationSans-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Align Letter";
+  src: url("/fonts/LiberationSans-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+.letter-preview-dialog { width: min(900px, calc(100vw - 32px)); max-height: 90vh; }
+.letter-preview-dialog::backdrop { background: rgb(0 0 0 / 0.6); }
+.letter-preview-page { box-sizing: border-box; background: white; color: #111; font-family: "Align Letter", Arial, sans-serif; box-shadow: 0 2px 16px rgb(0 0 0 / 0.15); }
+
 @layer base {
   /*
    * ALIGN palette — themeable via CSS variables. Dark navy is the default

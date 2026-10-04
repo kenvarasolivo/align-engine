@@ -1,5 +1,6 @@
 import type { AnalysisResult, Language, Mode, OutputTab } from "../types";
 import SkillCoach from "./SkillCoach";
+import DraftDownloads from "./DraftDownloads";
 
 interface OutputPanelProps {
   language: Language;
@@ -340,6 +341,7 @@ export default function OutputPanel({
         </div>
       ) : (
         <div className="flex-1 min-h-0 flex flex-col bg-panel">
+          <DraftDownloads draft={draft} mode={mode} language={language} isLoading={isLoading} />
           <div className="flex items-center justify-between gap-3 px-5 lg:px-6 py-2 border-b border-hairline bg-surface/40">
             <span className="label-caps">{t.draftTab}</span>
             {wordCount > 0 && (

@@ -10,6 +10,7 @@ ALIGN reads a job description against your resume, shows exactly where you match
 
 *   **Skill alignment matrix:** Top matching skills (with evidence) vs. crucial gaps, plus an in-range fit score — enforced through a strict Pydantic schema so the model can't return junk.
 *   **Editable drafts:** One-page Anschreiben (strict cover letter) or sub-200-word cold email, in **English or German**. You refine every result in the Draft Editor before it goes anywhere.
+*   **PDF and Word downloads:** Preview and export the current edited draft as a one-page A4 PDF or editable `.docx`. Cover letters use a right-aligned sender and date, a left-aligned recipient, and a bold subject. The layout adjusts spacing and font size (10–11.5 pt) to fit; drafts that exceed a readable single page must be shortened before downloading. Exports run in the browser, including for guests.
 *   **Skill Coach (RAG):** Turns each skill gap into a grounded upskilling plan. Gaps are embedded and matched against a curated knowledge base in **pgvector** (cosine KNN); Gemini writes advice drawn *only* from the retrieved cards and cites its source — auditable, not hallucinated.
 *   **Accounts (optional):** Email/password login via Supabase Auth. Guests get the full analyzer with nothing persisted; signed-in users get history, a resume vault, saved jobs, and insights.
 *   **History, vault & insights:** Every run is snapshotted and reloadable; resumes and jobs are reusable; insights aggregate your most-matched skills vs. recurring gaps, plus token usage and estimated cost.
@@ -158,7 +159,7 @@ It calls the real Gemini API and reports schema-validity, structural-compliance,
 2.  Pick a **mode** (Anschreiben or Email Outreach) and a **language** (EN / DE) in the header.
 3.  Paste your resume (top-left) and the job description (bottom-left) — signed-in users can **Save** either to their vault.
 4.  Hit **Run Alignment Analysis**.
-5.  Review the **Semantic Analysis** tab (top matches, crucial gaps), then refine the result in the **Draft Editor** tab.
+5.  Review the **Semantic Analysis** tab (top matches, crucial gaps), then refine the result in the **Draft Editor** tab. Use **Preview**, **Download PDF**, or **Download Word** to export your edits. For cover letters, separate sender, recipient, date, subject, greeting, body paragraphs and sign-off with blank lines; each address line belongs on its own line. Start the subject with `Bewerbung`, `Application for`, `Betreff:` or `Subject:`. Word files remain editable; changes or substituted fonts in Word can change pagination.
 6.  Browse **History**, **Resumes**, **Jobs**, and **Insights** from the header nav.
 
 ---
